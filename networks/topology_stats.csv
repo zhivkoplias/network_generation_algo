@@ -1,0 +1,4 @@
+growth_pace,size,nucleus_size,sparsity,shortest_path,diameter,time_spent
+0.6,100,20,2.52,2.1479,3,0:00:15.304454
+0.6,100,25,2.87,2.0923,3,0:00:20.103922
+0.6,100,30,2.52,2.1808,4,0:00:14.492930
