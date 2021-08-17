@@ -44,6 +44,9 @@ def main(args):
                 
     artificial_matrix_ffl = artificial_matrix_ffl[0]
 
+    #GS-to-NetworkX format conversion
+    artificial_matrix_ffl = artificial_matrix_ffl.transpose()
+
     if not os.path.exists(ART_NET_PATH):
        os.mkdir(ART_NET_PATH)
     
