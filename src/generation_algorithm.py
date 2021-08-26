@@ -689,7 +689,7 @@ def update_substrate_matrix(substrate_matrix, attachment_pattern, inner_motif, n
     return substrate_matrix_upd
 
 def contatenate_matrices(matrix, edge_list):
-     """
+    """
     Substrate network update by selected attachment pattern
     ________________________________________________________________________
     matrix - the ffl-component of network we are growing
@@ -697,7 +697,7 @@ def contatenate_matrices(matrix, edge_list):
     """
     #retrieve node numbers from ffl-component network
     num = matrix.shape[0]
- #   print(f"num start: {num}")
+   #print(f"num start: {num}")
     
     #name new nodes that need to be attached
     for inner_list in edge_list:
@@ -808,12 +808,10 @@ def generate_artificial_network(
     i = 0
     edges = 0
     while substrate_matrix.shape[0]+edges < network_size:
+        
      #   print(f"substrate_matrix.shape[0]: {substrate_matrix.shape[0]}")
       #  print(i)
         # Importing the library
-  
-        # Calling psutil.cpu_precent() for 4 seconds
-        print('The CPU usage is: ', psutil.cpu_percent(4))
         i += 1
         #print(network_params.substrate_motifs)
         
@@ -831,6 +829,8 @@ def generate_artificial_network(
             edges = edge_counter
         
         else:
+            # Calling psutil.cpu_precent() for 2 seconds
+            #print('The CPU usage is: ', psutil.cpu_percent(2))
             network_params = get_network_params(substrate_matrix, verbose=False, motif_search=False,
                                                 known_motifs = network_params.substrate_motifs)
             if fix_network_params is not None: 
