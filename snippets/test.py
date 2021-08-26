@@ -50,7 +50,7 @@ def main(args):
     if not os.path.exists(ART_NET_PATH):
        os.mkdir(ART_NET_PATH)
     
-    network_name = '_'.join(str(x) for x in [args.final_size,args.initial_size,args.growth_pace])
+    network_name = '_'.join(str(x) for x in ['nodes',args.final_size,'core_size',args.initial_size,'growth',args.growth_pace])
     joblib.dump(artificial_matrix_ffl, os.path.join(ART_NET_PATH,network_name+".gz"))
 
     return

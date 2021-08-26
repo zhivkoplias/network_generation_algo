@@ -176,22 +176,22 @@ def get_network_params(interaction_matrix, verbose=False,motif_search=True,known
 
 #Random selection of the inner/outer motif types and number of shared nodes with probabilities from the previous step
 
-def get_attachment_params(substrate_matrix, params, growth_pace=None):
+def get_attachment_params(substrate_matrix, params, growth_pace):
     """
     Selection of inner/outer motifs and number of shared nodes
     ________________________________________________________________________
     params - network parameters from previous stage of analysis (see get_network_params)
     """
-    
     # number of unique nodes in the outer motif
-    unique_nodes = params.unique_nodes.loc[[0, 1]]
+    normal_unique_nodes = params.unique_nodes.loc[[0, 1]]
+    unique_nodes = normal_unique_nodes
     #print('uniq nodes')
     #print(unique_nodes)
-    unique_nodes = unique_nodes/sum(unique_nodes)
-    if growth_pace is not None:
-        unique_nodes[1] = growth_pace
-        unique_nodes[0] = 1 - growth_pace
-
+    #unique_nodes = unique_nodes/sum(unique_nodes)
+    unique_nodes[1] = (growth_pace)
+    unique_nodes[0] = (1 - growth_pace)
+    #print(unique_nodes.values)
+	
     n_unique_nodes = np.random.choice(
         unique_nodes.index, p=unique_nodes.values
     )
@@ -577,6 +577,77 @@ def get_attachment_0n2e(substrate_matrix, params):
         return link_pair
 
 #### Update
+def update_edge_list(art_matrix, edge_list_update=None, num_of_nodes=1, power_law_degree=0.8):
+    """Barabasi's node prefferential attachment algorithm with power law attachment kernel
+    art_matrix - adjacency matrix
+    power_law_degree - power for in/out degree parameter
+    num_of_nodes - number of iterations"""
+    #art_matrix = art_matrix.transpose()
+    counter = 0
+#     print(f"starting num of edges: {art_matrix.sum()}")
+    
+    #list of added nodes
+    if edge_list_update==None:
+        edge_list_ins = []
+        edge_list_outs = []
+    else:
+        edge_list_ins = edge_list_update[0]
+  #      print(f"edge_list_ins: {edge_list_ins}")
+        edge_list_outs = edge_list_update[1]
+  #      print(f"edge_list_outs: {edge_list_outs}")
+    
+ #   print(type(barabasi_list))
+    while counter <= num_of_nodes:
+        # calculate in/out degree
+        out_degree_arr = art_matrix.sum(axis=0)
+#         print(f"starting out_degree_arr: {out_degree_arr}")
+        in_degree_arr = art_matrix.sum(axis=1)
+#         print(f"starting in_degree_arr: {in_degree_arr}")
+
+        # take candidate node randomly
+        candidate = np.random.choice(range(art_matrix.shape[0]))
+        random_node = candidate
+
+        # calculate attachment kernel (probs)
+        out_prob = f.out_prob_kernel(out_degree_arr, power_law_degree, random_node)
+        in_prob = f.in_prob_kernel(in_degree_arr, power_law_degree, random_node)
+
+        # drop number of repeats (from exp)
+        variants = np.linspace(0, 100, 101).astype(int)
+        probs = f.repeats_density(variants)/2
+        n_repeats = np.random.choice(variants, size=1, p=probs)[0]
+ #       print(f"n_repeats: {n_repeats}")
+        #n_repeats = 1
+    #     print(candidate)
+    #    print(out_prob, in_prob, n_repeats)
+        for i in range(n_repeats):
+            # drop random number from (0, 1)
+            seed = np.random.rand()
+#             print(f"seed: {seed}")
+#             print(f"in-prob: {in_prob}")
+#             print(f"out-prob: {out_prob}")
+            
+            # compare with kernel value and add or do not add out node+link
+            if seed < out_prob:
+                edge_list_outs.append([candidate, 'out'])
+                counter += 1
+                
+            # compare with kernel value and add or do not add in node+link
+            if seed < in_prob:
+                edge_list_ins.append(['in',candidate])
+                counter += 1
+        out_degree_arr = art_matrix.sum(axis=0)
+#         print(f"final out_degree_arr: {out_degree_arr}")
+#         in_degree_arr = art_matrix.sum(axis=1)
+#         print(f"final in_degree_arr: {in_degree_arr}")
+        
+        
+#     print(f"final num of edges: {art_matrix.sum()}")
+    edge_list_update = [edge_list_ins, edge_list_outs]
+ #   print(f"edge_list_update: {edge_list_update}")
+ #   print(len(edge_list_ins)+len(edge_list_outs))
+    #print(edge_list_update)
+    return edge_list_update, len(edge_list_ins)+len(edge_list_outs)
 
 def update_substrate_matrix(substrate_matrix, attachment_pattern, inner_motif, nodes_attach=False):
     """
@@ -617,17 +688,61 @@ def update_substrate_matrix(substrate_matrix, attachment_pattern, inner_motif, n
                 substrate_matrix_upd[i, j] = 1
     return substrate_matrix_upd
 
+def contatenate_matrices(matrix, edge_list):
+     """
+    Substrate network update by selected attachment pattern
+    ________________________________________________________________________
+    matrix - the ffl-component of network we are growing
+    edge_list - list with pairs of nodes that are not part of ffl-component // result of node-preferrential attachment model with power-law kernel
+    """
+    #retrieve node numbers from ffl-component network
+    num = matrix.shape[0]
+ #   print(f"num start: {num}")
+    
+    #name new nodes that need to be attached
+    for inner_list in edge_list:
+        for inner_index, element in enumerate(inner_list):
+            if element[0] == 'in':
+                inner_list[inner_index][0] = num
+                num+=1
+            elif element[1] == 'out':
+                inner_list[inner_index][1] = num
+                num+=1
+  
+    #print(f"num end: {num}")
+    edge_list_flatten = f.flatten(edge_list)
+    f_list = list(f.flatten(edge_list_flatten))
+    
+    #print(f"max(f_list): {max(f_list)}")
+    #print(f"f_list: {f_list}")
+
+    #create template for resulting network
+    final_mat = np.zeros((max(f_list)+1, max(f_list)+1))
+    
+    #add ffl-nodes
+    final_mat[0:matrix.shape[0], 0:matrix.shape[0]] = matrix
+    
+    #add non-ffl nodes
+    for pair in edge_list[0]:
+        final_mat[pair[0], pair[1]] = 1
+    for pair in edge_list[1]:
+        final_mat[pair[1], pair[0]] = 1
+    
+    return final_mat
+
 # Stack all in the pipeline
 
 def generate_artificial_network(
-    interaction_matrix, 
+    interaction_matrix,
     motifs=None, 
     motifs_network=None, 
-    nucleus_size=25,
-    growth_pace=None,
+    nucleus_size=30,
+    growth_pace=0.4,
     network_size = 100,
     reference_matrix=None,
-    random_seed=cfg["RANDOM_SEED"]
+    random_seed=cfg["RANDOM_SEED"],
+    growth_barabasi=0.2,
+    sparsity=3
 ):
     
     """
@@ -641,7 +756,7 @@ def generate_artificial_network(
     motifs_network (numpy.array, default=None) 
         Vertex-based motifs network (linkage by shared nodes)
         If None VMN buiding algorithm is launched
-    nucleus_size (int, default=25)
+    nucleus_size (int, default=30)
         Minimal required size of initial nucleus. 
         The resulting size may be slightly higher as we may attach two nodes per time.
     network_size (int, default=100)
@@ -649,6 +764,10 @@ def generate_artificial_network(
         The resulting size may be slightly higher as we may attach two nodes per time.
     random_seed (int, default=19)
         Reproducibility parameter
+    growth_barabasi (int, default=0.2)
+        Percentage of nodes that are part of FFL-component of resulting network.
+    sparsity (int, default=3)
+        Average number of links per node in resulting network
     """
     assert (motifs is None) & (motifs_network is None) | (motifs is not None)
     np.random.seed(random_seed)
@@ -687,86 +806,137 @@ def generate_artificial_network(
     # preferencial attachment start
     substrate_size = substrate_matrix.shape[0]
     i = 0
-    while substrate_size < network_size:
+    edges = 0
+    while substrate_matrix.shape[0]+edges < network_size:
+     #   print(f"substrate_matrix.shape[0]: {substrate_matrix.shape[0]}")
+      #  print(i)
         # Importing the library
   
         # Calling psutil.cpu_precent() for 4 seconds
-        #print('The CPU usage is: ', psutil.cpu_percent(4))
+        print('The CPU usage is: ', psutil.cpu_percent(4))
         i += 1
         #print(network_params.substrate_motifs)
-        network_params = get_network_params(substrate_matrix, verbose=False, motif_search=False,
-                                            known_motifs = network_params.substrate_motifs)
-        if fix_network_params is not None: 
-            Params = namedtuple(
-                "Params", "substrate_motifs tf_nodes tg_nodes mtype_probs unique_nodes unique_edges_1 unique_edges_0"
-            )
-            network_params = Params(
-                *[network_params.substrate_motifs,
-                  network_params.tf_nodes,
-                  network_params.tg_nodes,
-                  fix_network_params.mtype_probs,
-                  fix_network_params.unique_nodes,
-                  fix_network_params.unique_edges_1,
-                  fix_network_params.unique_edges_0]
-            )
-        params = get_attachment_params(substrate_matrix, network_params, growth_pace=growth_pace)
-#         print(params[-5:])
-        if params.n_unique_nodes == 1:
-            #print('1 node')
-            attachment_pattern = get_attachment_1n2e(substrate_matrix, params)
-
-            #             n_edges_to_join = 1
-            if attachment_pattern is not None:
-                motif_to_add = attachment_pattern[1]
-                #print(motif_to_add)
-                attachment_pattern = attachment_pattern[0]
-
-                #print(network_params.substrate_motifs)
-                network_params.substrate_motifs.append(motif_to_add)
-            
-            
-        elif params.n_unique_nodes == 0 and params.n_unique_edges == 1:
-            #print('0 node, 1 edges')
-            attachment_pattern = get_attachment_0n1e(substrate_matrix, params)
-            
-            #update motifs
-            if attachment_pattern is not None:
-                motif_to_add = attachment_pattern[1]
-                #print(motif_to_add)
-                attachment_pattern = attachment_pattern[0]
-
-                #print(network_params.substrate_motifs)
-                network_params.substrate_motifs.append(motif_to_add)
-            
-#             n_edges_to_join = 2
-        elif params.n_unique_nodes == 0 and params.n_unique_edges == 2:
-            #print('0 nodes, 2 edges')
-            attachment_pattern = get_attachment_0n2e(substrate_matrix, params)
-            
-            #update motifs
-            if attachment_pattern is not None:
-                motif_to_add = attachment_pattern[1]
-                #print(motif_to_add)
-                attachment_pattern = attachment_pattern[0]
-
-                #print(network_params.substrate_motifs)
-                network_params.substrate_motifs.append(motif_to_add)
+        
+        #decide between node and motif preferrential attachment
+        p1 = np.random.uniform()
+        if p1 < growth_barabasi:
+            #edges += 1
+            #print(f"edges: {edges}")
+            try:
+                out_edge_list, edge_counter = update_edge_list(substrate_matrix, edge_list)
                 
-#             n_edges_to_join = 2
-        inner_motif = f.split_motif(params.substrate_motifs[params.inner_motif_1_idx])
-        nodes_attach = params.n_unique_nodes == 1
-        substrate_matrix = update_substrate_matrix(
+            except NameError:
+                out_edge_list, edge_counter = update_edge_list(substrate_matrix)
+            edge_list = out_edge_list
+            edges = edge_counter
+        
+        else:
+            network_params = get_network_params(substrate_matrix, verbose=False, motif_search=False,
+                                                known_motifs = network_params.substrate_motifs)
+            if fix_network_params is not None: 
+                Params = namedtuple(
+                    "Params", "substrate_motifs tf_nodes tg_nodes mtype_probs unique_nodes unique_edges_1 unique_edges_0"
+                )
+                network_params = Params(
+                    *[network_params.substrate_motifs,
+                      network_params.tf_nodes,
+                      network_params.tg_nodes,
+                      fix_network_params.mtype_probs,
+                      fix_network_params.unique_nodes,
+                      fix_network_params.unique_edges_1,
+                      fix_network_params.unique_edges_0]
+                )
+            params = get_attachment_params(substrate_matrix, network_params, growth_pace=growth_pace)
+    #         print(params[-5:])
+            if params.n_unique_nodes == 1:
+                #print('1 node')
+                attachment_pattern = get_attachment_1n2e(substrate_matrix, params)
+    
+                #             n_edges_to_join = 1
+                if attachment_pattern is not None:
+                    motif_to_add = attachment_pattern[1]
+                    #print(motif_to_add)
+                    attachment_pattern = attachment_pattern[0]
+    
+                    #print(network_params.substrate_motifs)
+                    network_params.substrate_motifs.append(motif_to_add)        
+                
+            elif params.n_unique_nodes == 0 and params.n_unique_edges == 1:
+                #print('0 node, 1 edges')
+                attachment_pattern = get_attachment_0n1e(substrate_matrix, params)
+                
+                #update motifs
+                if attachment_pattern is not None:
+                    motif_to_add = attachment_pattern[1]
+                    #print(motif_to_add)
+                    attachment_pattern = attachment_pattern[0]
+    
+                    #print(network_params.substrate_motifs)
+                    network_params.substrate_motifs.append(motif_to_add)
+                
+    #             n_edges_to_join = 2
+            elif params.n_unique_nodes == 0 and params.n_unique_edges == 2:
+                #print('0 nodes, 2 edges')
+                attachment_pattern = get_attachment_0n2e(substrate_matrix, params)
+                
+                #update motifs
+                if attachment_pattern is not None:
+                    motif_to_add = attachment_pattern[1]
+                    #print(motif_to_add)
+                    attachment_pattern = attachment_pattern[0]
+    
+                    #print(network_params.substrate_motifs)
+                    network_params.substrate_motifs.append(motif_to_add)
+                    
+    #             n_edges_to_join = 2
+            inner_motif = f.split_motif(params.substrate_motifs[params.inner_motif_1_idx])
+            nodes_attach = params.n_unique_nodes == 1
+            substrate_matrix = update_substrate_matrix(
             substrate_matrix, attachment_pattern, inner_motif, nodes_attach
-        )
-        if nodes_attach and attachment_pattern is not None:
-            substrate_size = substrate_matrix.shape[0]
-            n_nodes_to_join = int(attachment_pattern.shape[0] - 3)
+            )
+            if nodes_attach and attachment_pattern is not None:
+                substrate_size = substrate_matrix.shape[0]
+                n_nodes_to_join = int(attachment_pattern.shape[0] - 3)
         #print(f"step: {i}\tnodes: {substrate_matrix.shape[0]}\tedeges: {substrate_matrix.sum()}")
     sleep(2)
     print()
-
-    links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
-    total_time_spent = str(f"{datetime.now() - init_time}")
     
+    
+    #print(edge_list)
+    #print(substrate_matrix)
+    nodes_in_ffl = substrate_matrix.shape[0]
+    
+    substrate_matrix = contatenate_matrices(substrate_matrix, edge_list)
+    links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
+    #print(links_per_node)
+    #print(substrate_matrix.shape)
+    
+    #check for sparsity
+    while links_per_node < sparsity:
+        #calculate in, out degree
+        out_degree = substrate_matrix.sum(axis=1)
+        in_degree = substrate_matrix.sum(axis=0)
+        nodes = list(range(0, len(substrate_matrix)))
+    
+        #calculate probs
+        in_probs = pd.Series(in_degree/sum(in_degree), nodes)
+        out_probs = pd.Series(out_degree/sum(out_degree), nodes)
+    
+        #nodes that create edge
+        regulator = np.random.choice(out_probs.index, p=out_probs.values)
+        regulatee = np.random.choice(in_probs.index)
+        #print([regulator, regulatee])
+    
+        #add edge
+        substrate_matrix[regulator,regulatee] = 1
+        links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
+        
+    
+    ffl_perc = nodes_in_ffl/substrate_matrix.shape[0]
+    total_time_spent = str(f"{datetime.now() - init_time}")
+    print(f"growth_barabasi: {growth_barabasi}")
+    print(f"ffl_perc: {ffl_perc}")
+    print(f"links_per_node: {links_per_node}")
     print(f"Network has been successfully generated!\nTotal time spent: {datetime.now() - init_time}")
-    return substrate_matrix, total_time_spent, links_per_node
+    
+    return substrate_matrix, total_time_spent, links_per_node, ffl_perc

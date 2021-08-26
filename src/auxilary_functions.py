@@ -462,3 +462,24 @@ def read_df_as_network(filename):
         network_df = pd.read_csv(f, sep=' ', header = None)
         network = nx.from_pandas_edgelist(network_df, source = 0, target = 1)
         return network
+
+def out_prob_kernel(out_degree_arr, power_law_degree, random_node):
+    out_prob = out_degree_arr[random_node]**power_law_degree
+    out_prob /= sum(out_degree_arr**power_law_degree)
+    return out_prob
+    
+def in_prob_kernel(in_degree_arr, power_law_degree, random_node):
+    in_prob = in_degree_arr[random_node]**power_law_degree
+    in_prob /= sum(in_degree_arr**power_law_degree)
+    return in_prob
+    
+def repeats_density(x, f=0.25, a=3):
+    return (f**(1/(1-a))-1)*f**(-x/(1-a))
+
+def flatten(container):
+    for i in container:
+        if isinstance(i, (list,tuple)):
+            for j in flatten(i):
+                yield j
+        else:
+            yield i
