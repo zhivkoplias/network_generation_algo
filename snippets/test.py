@@ -69,5 +69,5 @@ if __name__ == '__main__':
 
 #Command to execute the script:
 
-#python test.py 20 100 0.5 
+#python3 test.py 30 100 0.5 
 
