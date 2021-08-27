@@ -20,6 +20,7 @@ from matplotlib import pyplot as pltthe
 from datetime import datetime
 from tqdm import tqdm
 from time import sleep
+import multiprocessing as mp
 
 
 def get_network_nucleus(
@@ -741,8 +742,9 @@ def generate_artificial_network(
     network_size = 100,
     reference_matrix=None,
     random_seed=cfg["RANDOM_SEED"],
-    growth_barabasi=0.2,
-    sparsity=3
+    growth_barabasi=cfg["GROWTH_BARABASI"],
+    sparsity=cfg["SPARSITY"],
+    shuffled=cfg["SHUFFLED"]
 ):
     
     """
@@ -807,6 +809,8 @@ def generate_artificial_network(
     substrate_size = substrate_matrix.shape[0]
     i = 0
     edges = 0
+
+    N_CORES = mp.cpu_count() if cfg["N_CORES_TO_USE"] == -1 else cfg["N_CORES_TO_USE"]
     while substrate_matrix.shape[0]+edges < network_size:
         
      #   print(f"substrate_matrix.shape[0]: {substrate_matrix.shape[0]}")
@@ -930,8 +934,21 @@ def generate_artificial_network(
         #add edge
         substrate_matrix[regulator,regulatee] = 1
         links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
-        
     
+    #return shuffled matrix
+    if shuffled:
+        complete = False
+        swaps = (substrate_matrix.sum())*0.2
+        while not complete:
+            shuffled_matrix = f.get_shuffled_matrix(substrate_matrix, swaps)
+            shiffled_score = 1-f.corruption_score(substrate_matrix, shuffled_matrix)
+            print(shiffled_score)
+            swaps += (substrate_matrix.sum())*0.2
+            if shiffled_score >= 0.77:
+                complete = True
+                
+        substrate_matrix = shuffled_matrix
+                
     ffl_perc = nodes_in_ffl/substrate_matrix.shape[0]
     total_time_spent = str(f"{datetime.now() - init_time}")
     print(f"growth_barabasi: {growth_barabasi}")
