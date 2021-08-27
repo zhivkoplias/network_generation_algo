@@ -41,7 +41,8 @@ def main(args):
                     yeast_matrix, motifs=ffl_motif, motifs_network=ffl_component,
                     nucleus_size=args.initial_size, network_size=args.final_size, growth_pace=args.growth_pace,
                     reference_matrix=ffl_matrix)
-                
+    
+    ffl_perc = artificial_matrix_ffl[3]
     artificial_matrix_ffl = artificial_matrix_ffl[0]
 
     #GS-to-NetworkX format conversion
@@ -50,7 +51,7 @@ def main(args):
     if not os.path.exists(ART_NET_PATH):
        os.mkdir(ART_NET_PATH)
     
-    network_name = '_'.join(str(x) for x in ['nodes',args.final_size,'core_size',args.initial_size,'growth',args.growth_pace])
+    network_name = '_'.join(str(x) for x in ['nodes',args.final_size,'core_size',args.initial_size,'growth',args.growth_pace,'ffl_perc',ffl_perc])
     joblib.dump(artificial_matrix_ffl, os.path.join(ART_NET_PATH,network_name+".gz"))
 
     return
@@ -69,5 +70,5 @@ if __name__ == '__main__':
 
 #Command to execute the script:
 
-#python3 test.py 30 100 0.5 
+#python3 test.py 30 100 0.4 
 
