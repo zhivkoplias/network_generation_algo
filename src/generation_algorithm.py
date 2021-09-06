@@ -617,26 +617,26 @@ def update_edge_list(art_matrix, edge_list_update=None, num_of_nodes=1, power_la
         variants = np.linspace(0, 100, 101).astype(int)
         probs = f.repeats_density(variants)/2
         n_repeats = np.random.choice(variants, size=1, p=probs)[0]
- #       print(f"n_repeats: {n_repeats}")
-        #n_repeats = 1
+        #print(f"n_repeats: {n_repeats}")
+        if n_repeats:
     #     print(candidate)
-    #    print(out_prob, in_prob, n_repeats)
-        for i in range(n_repeats):
-            # drop random number from (0, 1)
-            seed = np.random.rand()
-#             print(f"seed: {seed}")
-#             print(f"in-prob: {in_prob}")
-#             print(f"out-prob: {out_prob}")
+    #        print(out_prob, in_prob, n_repeats)
+            for i in range(n_repeats):
+                # drop random number from (0, 1)
+                seed = np.random.rand()
+#                 print(f"seed: {seed}")
+#                 print(f"in-prob: {in_prob}")
+#                 print(f"out-prob: {out_prob}")
             
-            # compare with kernel value and add or do not add out node+link
-            if seed < out_prob:
-                edge_list_outs.append([candidate, 'out'])
-                counter += 1
+                # compare with kernel value and add or do not add out node+link
+                if seed < out_prob:
+                    edge_list_outs.append([candidate, 'out'])
+                    counter += 1
                 
-            # compare with kernel value and add or do not add in node+link
-            if seed < in_prob:
-                edge_list_ins.append(['in',candidate])
-                counter += 1
+                # compare with kernel value and add or do not add in node+link
+                if seed < in_prob:
+                    edge_list_ins.append(['in',candidate])
+                    counter += 1
         out_degree_arr = art_matrix.sum(axis=0)
 #         print(f"final out_degree_arr: {out_degree_arr}")
 #         in_degree_arr = art_matrix.sum(axis=1)
@@ -731,6 +731,31 @@ def contatenate_matrices(matrix, edge_list):
     
     return final_mat
 
+def filter_for_loops(substrate_matrix):
+    matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+    loops_edges = 0
+    
+    #iterate over all 3-node loops in network
+    for motif in matrix_motifs['030C']:
+        #iterate over all nodes in motif
+        nodes = motif.split('_')
+        out_degrees = {}
+        for node in nodes:
+            #calculate out-degree
+            out_degrees[node] = substrate_matrix[int(node),:].sum()
+        
+        #sort by out-degree
+        out_degrees = {k: v for k, v in sorted(out_degrees.items(), key=lambda item: item[1])}
+        nodes = list(out_degrees.keys())
+    
+        #delete out-degree for that node
+        substrate_matrix[int(nodes[0]),int(nodes[1])] = 0
+        substrate_matrix[int(nodes[0]),int(nodes[2])] = 0
+    
+        #counter
+        loops_edges +=1
+    return loops_edges, substrate_matrix
+
 # Stack all in the pipeline
 
 def generate_artificial_network(
@@ -809,6 +834,7 @@ def generate_artificial_network(
     substrate_size = substrate_matrix.shape[0]
     i = 0
     edges = 0
+    barabasi_entering = 0
 
     N_CORES = mp.cpu_count() if cfg["N_CORES_TO_USE"] == -1 else cfg["N_CORES_TO_USE"]
     while substrate_matrix.shape[0]+edges < network_size:
@@ -820,9 +846,25 @@ def generate_artificial_network(
         #print(network_params.substrate_motifs)
         
         #decide between node and motif preferrential attachment
-        p1 = np.random.uniform()
-        if p1 < growth_barabasi:
-            #edges += 1
+        
+        #p1 = np.random.uniform()
+        #growth_barabasi = (0.1/growth_barabasi) - (nucleus_size/network_size)
+        #print(f"growth_barabasi: {growth_barabasi}")
+        ffl_desired = growth_barabasi
+        #print(f"ffl_desired: {ffl_desired}")
+
+        ffl_perc = ((ffl_desired*network_size)-nucleus_size)/(network_size-nucleus_size)
+        if ffl_perc <= 0:
+            ffl_perc = 0
+        else:
+            ffl_perc = ((ffl_desired*network_size)-nucleus_size)/(network_size-nucleus_size)
+            scaling_factor = network_size/(nucleus_size*0.75)
+            ffl_perc =(scaling_factor*ffl_perc)/((scaling_factor*ffl_perc) + (1-ffl_perc))
+        #    print(f"ffl_perc: {ffl_perc}")
+
+        your_choise = np.random.choice(['ffl', 'barabasi'], p=[ffl_perc,1-ffl_perc])
+        if your_choise == 'barabasi':
+            barabasi_entering += 1
             #print(f"edges: {edges}")
             try:
                 out_edge_list, edge_counter = update_edge_list(substrate_matrix, edge_list)
@@ -910,13 +952,29 @@ def generate_artificial_network(
     #print(substrate_matrix)
     nodes_in_ffl = substrate_matrix.shape[0]
     
-    substrate_matrix = contatenate_matrices(substrate_matrix, edge_list)
+    if edges > 0:
+    	substrate_matrix = contatenate_matrices(substrate_matrix, edge_list)
     links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
     #print(links_per_node)
     #print(substrate_matrix.shape)
     
     #check for sparsity
-    while links_per_node < sparsity:
+    loop_edges, substrate_matrix = filter_for_loops(substrate_matrix)
+    compensated_edges = 0
+    
+    #check if loops were deleted
+    #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+    #print(motifs_stats)
+    #print(matrix_motifs['030C'])
+
+    while links_per_node < sparsity or compensated_edges < loop_edges:
+        
+        #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+        #print(motifs_stats)
+        #print(matrix_motifs['030C'])
+        #print(substrate_matrix)
+        substrate_matrix_upd = deepcopy(substrate_matrix)
+        
         #calculate in, out degree
         out_degree = substrate_matrix.sum(axis=1)
         in_degree = substrate_matrix.sum(axis=0)
@@ -929,12 +987,54 @@ def generate_artificial_network(
         #nodes that create edge
         regulator = np.random.choice(out_probs.index, p=out_probs.values)
         regulatee = np.random.choice(in_probs.index)
+        if regulatee == regulator:
+            while regulatee == regulator:
+                regulatee = np.random.choice(in_probs.index)
         #print([regulator, regulatee])
     
         #add edge
-        substrate_matrix[regulator,regulatee] = 1
+        substrate_matrix_upd[regulator,regulatee] = 1
+        
+        #loop_edges, substrate_no_loops = filter_for_loops(substrate_matrix_upd)
+        #print(f"loop_edges while sparsity: {loop_edges}")
+        #if loop_edges == 0:
+        graph_nx = nx.DiGraph(substrate_matrix_upd.T)
+        link_to_attach = [regulator,regulatee]
+        neighbours = []
+        
+        for node in graph_nx.nodes:
+            if node in link_to_attach:
+            #print('node: '+str(node))
+                neighbours.append(list(nx.all_neighbors(graph_nx, node)))
+        if len(neighbours) > 1:
+         #   print(neighbours)
+            common_node = list(set(neighbours[0]).intersection(set(neighbours[1])))
+        #print(f"common_node: {common_node}")
+        
+        #check if 3-node loop is not created
+        if len(common_node) > 0:
+            safe_to_add = True
+            for node in common_node:
+                if substrate_matrix[regulatee,node] == 1 and substrate_matrix[node,regulator] == 1:
+                    safe_to_add = False
+                    
+            if safe_to_add:
+                #print(f"no loop created, your pair (and their neighbour): {link_to_attach, node}")
+                compensated_edges += 1
+                substrate_matrix = substrate_matrix_upd
+                    
+            else:
+                #print(f"trouble! troubled pair: {link_to_attach}")
+                substrate_matrix_upd = substrate_matrix
+        else:
+            #print(f"no common node, your pair: {link_to_attach}")
+            compensated_edges += 1
+            substrate_matrix = substrate_matrix_upd
+            
         links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
-    
+        #
+        
+
     #return shuffled matrix
     if shuffled:
         complete = False
@@ -950,7 +1050,15 @@ def generate_artificial_network(
         substrate_matrix = shuffled_matrix
                 
     ffl_perc = nodes_in_ffl/substrate_matrix.shape[0]
+    
     total_time_spent = str(f"{datetime.now() - init_time}")
+    #calculate loops once again
+    matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+    print(motifs_stats)
+    print(matrix_motifs['030C'])
+    #print(f"loop_edges: {loop_edges}")
+    #print(f"num of barabasi entering: {barabasi_entering}")
+    #print(f"num of edges: {edges}")
     print(f"growth_barabasi: {growth_barabasi}")
     print(f"ffl_perc: {ffl_perc}")
     print(f"links_per_node: {links_per_node}")
