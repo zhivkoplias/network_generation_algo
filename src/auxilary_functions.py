@@ -21,6 +21,7 @@ from copy import copy
 from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy import sparse
+import resource
 
 import networkx as nx
 from networkx.algorithms.distance_measures import diameter
@@ -523,3 +524,15 @@ def collect_topological_parameters(cfg, interaction_matrix, label):
     params.append(label)
     
     return params
+
+def get_free_memory():
+    with open('/proc/meminfo', 'r') as mem:
+        free_memory = 0
+        for i in mem:
+            sline = i.split()
+            if str(sline[0]) in ('MemFree:', 'Buffers:', 'Cached:'):
+                free_memory += int(sline[1])
+    return (free_memory*1024)/1000000
+
+def get_memory_usage():
+    return (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024)/1000000

@@ -843,6 +843,14 @@ def generate_artificial_network(
       #  print(i)
         # Importing the library
         i += 1
+        #usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+	
+        print(f"num of iterations: {i}")
+        print(f"ffl-components size: {substrate_matrix.shape[0]}")
+        print(f"num of nodes: {edges}")
+        print(f"memory usage (MB): {f.get_memory_usage()}")
+        print(f"free memory left (MB): {f.get_free_memory()}")
+        print(f"The CPU usage is:: {psutil.cpu_percent()}")
         #print(network_params.substrate_motifs)
         
         #decide between node and motif preferrential attachment
