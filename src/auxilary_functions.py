@@ -6,7 +6,6 @@ Auxiliary functions
 
 import warnings
 warnings.filterwarnings("ignore")
-
 import os
 import json
 import joblib
@@ -21,6 +20,7 @@ from math import factorial
 from copy import copy
 from matplotlib import pyplot as plt
 import seaborn as sns
+from scipy import sparse
 
 import networkx as nx
 from networkx.algorithms.distance_measures import diameter
@@ -156,7 +156,8 @@ def motif_search(cfg, interaction_matrix, batch_size, dump=False, verbose=False)
     N_CORES = mp.cpu_count() if cfg["N_CORES_TO_USE"] == -1 else cfg["N_CORES_TO_USE"]
     
     def connected_triads_generator(interaction_matrix):
-
+        if type(interaction_matrix) == 'scipy.sparse.csr.csr_matrix':
+            interaction_matrix = sparse.csr_matrix.toarray(interaction_matrix)
         interaction_matrix_adj = interaction_matrix - np.diag(np.diag(interaction_matrix))
         tg_idxs, tf_idxs = np.where(interaction_matrix_adj != 0)
         links = pd.DataFrame(index=range(len(tf_idxs)), columns=["tf", "tg"])
@@ -483,3 +484,42 @@ def flatten(container):
                 yield j
         else:
             yield i
+
+def build_Tnet(edges, n):
+    """returns adjacency matrix
+       requires adjacency list and matrix size
+    """
+    interaction_matrix = np.zeros((n, n))
+    interaction_matrix[edges[:, 0], edges[:, 1]] = 1
+    return interaction_matrix
+
+def collect_topological_parameters(cfg, interaction_matrix, label):
+    """returns ffl-node participation, sparsity, average in/out-degree
+       requires adjacency matrix and config file
+    """
+    
+    #ffl-part
+    motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
+    motifs = motifs["030T"]
+    ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs], [])))
+    p1 = len(ffl_nodes)/interaction_matrix.shape[0]
+
+    #sparsity
+    p2 = interaction_matrix.sum()/interaction_matrix.shape[0]
+
+    #in-degree
+    in_degree = []
+    for i in range(interaction_matrix.shape[0]):
+        in_degree.append(interaction_matrix[i:].sum()/interaction_matrix.shape[0])
+    p3 = sum(in_degree)/len(in_degree)
+
+    #out-degree
+    out_degree = []
+    for i in range(interaction_matrix.shape[0]):
+        out_degree.append(interaction_matrix[:i].sum()/interaction_matrix.shape[0])
+    p4 = sum(out_degree)/len(out_degree)
+    
+    params = list(map(lambda ids: round(ids, 3), [p1, p2, p3, p4]))
+    params.append(label)
+    
+    return params
