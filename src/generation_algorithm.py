@@ -21,6 +21,7 @@ from datetime import datetime
 from tqdm import tqdm
 from time import sleep
 import multiprocessing as mp
+import tracemalloc
 
 
 def get_network_nucleus(
@@ -216,7 +217,8 @@ def get_attachment_params(substrate_matrix, params, growth_pace):
 #             params.unique_edges_0.index, p=params.unique_edges_0.values
 #         ))
     # buiding VMN for motifs
-    substrate_vmn = f.build_vmn(params.substrate_motifs)    
+    substrate_vmn = f.build_vmn(params.substrate_motifs)
+    print(substrate_vmn.shape)
     
     # motif selection for 1 node/2 edges attachment case
     if n_unique_nodes == 1 and n_unique_edges == 0:
@@ -229,7 +231,8 @@ def get_attachment_params(substrate_matrix, params, growth_pace):
     # motif selection for 0 nodes/1 edges attachment case
     elif n_unique_nodes == 0 and n_unique_edges == 1:
         substrate_type_idxs = np.where((substrate_vmn==1)|(substrate_vmn==2))[0]
-        substrate_type_vmn = substrate_vmn[substrate_type_idxs, :]
+        substrate_type_vmn = substrate_vmn
+        #substrate_type_vmn = substrate_vmn[substrate_type_idxs, :]
         weights = substrate_type_vmn.sum(axis=1)
         weights /= sum(weights)
         while True:
@@ -248,7 +251,8 @@ def get_attachment_params(substrate_matrix, params, growth_pace):
     # motif selection for 0 nodes/2 edges attachment case
     elif n_unique_nodes == 0 and n_unique_edges == 2:
         substrate_type_idxs = np.where((substrate_vmn==1)|(substrate_vmn==0))[0]
-        substrate_type_vmn = substrate_vmn[substrate_type_idxs, :]
+        substrate_type_vmn = substrate_vmn
+        #substrate_type_vmn = substrate_vmn[substrate_type_idxs, :]
         weights = substrate_type_vmn.sum(axis=1)
         weights /= sum(weights)
         while True:
@@ -281,6 +285,7 @@ def get_attachment_params(substrate_matrix, params, growth_pace):
     params = Params(
         *[params.substrate_motifs, inner_motif_1_idx, inner_motif_2_idx, intype_1, intype_2, outtype, n_unique_nodes, n_unique_edges]
     )
+    print(params)
     return params
 
 #### Attach 1 node and 2 edges
@@ -764,12 +769,13 @@ def generate_artificial_network(
     motifs_network=None, 
     nucleus_size=30,
     growth_pace=0.4,
-    network_size = 100,
+    network_size=100,
     reference_matrix=None,
     random_seed=cfg["RANDOM_SEED"],
     growth_barabasi=cfg["GROWTH_BARABASI"],
     sparsity=cfg["SPARSITY"],
-    shuffled=cfg["SHUFFLED"]
+    shuffled=cfg["SHUFFLED"],
+    output_format=cfg["OUTPUT"]
 ):
     
     """
@@ -842,7 +848,13 @@ def generate_artificial_network(
      #   print(f"substrate_matrix.shape[0]: {substrate_matrix.shape[0]}")
       #  print(i)
         # Importing the library
+        if i>=1:
+            #snapshot = tracemalloc.take_snapshot()
+            #top_stats = snapshot.statistics("lineno")
+            #[print(stat) for stat in top_stats]
+            print('/n')
         i += 1
+        #tracemalloc.start()
         #usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 	
         print(f"num of iterations: {i}")
@@ -851,6 +863,7 @@ def generate_artificial_network(
         print(f"memory usage (MB): {f.get_memory_usage()}")
         print(f"free memory left (MB): {f.get_free_memory()}")
         print(f"The CPU usage is:: {psutil.cpu_percent()}")
+        #f.limit_memory(2000)
         #print(network_params.substrate_motifs)
         
         #decide between node and motif preferrential attachment
@@ -860,16 +873,17 @@ def generate_artificial_network(
         #print(f"growth_barabasi: {growth_barabasi}")
         ffl_desired = growth_barabasi
         #print(f"ffl_desired: {ffl_desired}")
-
+	
         ffl_perc = ((ffl_desired*network_size)-nucleus_size)/(network_size-nucleus_size)
+        #ffl_perc = 1 - ffl_perc
         if ffl_perc <= 0:
             ffl_perc = 0
         else:
             ffl_perc = ((ffl_desired*network_size)-nucleus_size)/(network_size-nucleus_size)
-            scaling_factor = network_size/(nucleus_size*0.75)
+            scaling_factor = 12
             ffl_perc =(scaling_factor*ffl_perc)/((scaling_factor*ffl_perc) + (1-ffl_perc))
         #    print(f"ffl_perc: {ffl_perc}")
-
+        print(ffl_perc)
         your_choise = np.random.choice(['ffl', 'barabasi'], p=[ffl_perc,1-ffl_perc])
         if your_choise == 'barabasi':
             barabasi_entering += 1
@@ -1072,4 +1086,23 @@ def generate_artificial_network(
     print(f"links_per_node: {links_per_node}")
     print(f"Network has been successfully generated!\nTotal time spent: {datetime.now() - init_time}")
     
-    return substrate_matrix, total_time_spent, links_per_node, ffl_perc
+
+    if output_format == 'adj_list':
+
+        adj_list = []
+
+        for name_regulator, i in enumerate(substrate_matrix):
+            for name_regulatee, j in enumerate(substrate_matrix.T):
+                if substrate_matrix[name_regulator][name_regulatee] == 1:
+                    adj_list.append([name_regulator, name_regulatee])
+        
+        #print(adj_list)  
+        return adj_list
+    
+    elif output_format == 'full':
+
+        return substrate_matrix, total_time_spent, links_per_node, ffl_perc
+    
+    else:
+
+        return substrate_matrix

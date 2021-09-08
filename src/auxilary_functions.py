@@ -536,3 +536,8 @@ def get_free_memory():
 
 def get_memory_usage():
     return (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024)/1000000
+
+def limit_memory(maxsize):
+    maxsize = (maxsize*1000000)/1024
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
