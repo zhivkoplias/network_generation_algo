@@ -40,10 +40,12 @@ def load_ffl_based_component():
 def main(args):
     for rep in range(args.num_networks):
         yeast_matrix, ffl_motif, ffl_component, ffl_matrix = load_ffl_based_component()
+        growth_rate = np.random.randint(1,6)*0.1
+        core_size = np.random.randint(20,30)
         artificial_matrix_ffl = generate_artificial_network(
                         yeast_matrix, motifs=ffl_motif, motifs_network=ffl_component,
-                        reference_matrix=ffl_matrix,
-                        network_size=args.final_size,
+                        reference_matrix=ffl_matrix, growth_pace=growth_rate,
+                        network_size=args.final_size, nucleus_size=core_size,
                         growth_barabasi=args.ffl_perc)
     
         #save output // if full stats

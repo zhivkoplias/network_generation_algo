@@ -6,7 +6,6 @@ ada	ada	+-
 ada	alkB	+-
 ada	alkA	+
 ada	aidB	+
-alaS	alaS	-
 argR	argA	-
 argR	gltF	-
 argR	argE	-
@@ -134,6 +133,8 @@ fis	malF	+
 fis	malG	+
 fis	chpR	+
 fis	mazG	+
+fis	mtlA	-
+fis	mtlD	-
 fis	nanA	-
 fis	osmY	-
 fis	dps	-
@@ -143,6 +144,7 @@ fis	marR	+
 fis	gadB	-
 fis	marB	+
 fis	proP	+
+fis	mtlR	-
 fis	adhE	+
 fis	osmE	-
 fis	ansB	-
@@ -236,6 +238,7 @@ fis	hlyE	-
 fis	gadC	-
 fis	cspI	-
 fis	flxA	+
+fis	yeaR	-
 fis	ygjG	?
 fis	yhcH	-
 fis	nanK	-
@@ -364,6 +367,7 @@ hns	lhgO	+
 hns	garP	-
 hns	alaU	-
 hns	cadB	-
+hns	cydB	-
 hns	cysA	-
 hns	cysM	-
 hns	cysP	-
@@ -440,6 +444,7 @@ hns	csiD	+
 hns	yjjP	-
 hns	yjjQ	-
 hns	bglJ	-
+hns	srlA	+
 hns	ybdZ	+
 hns	hisM	+
 hns	garL	-
@@ -606,6 +611,9 @@ mprA	emrA	-
 mprA	acrB	-
 mprA	acrA	-
 mprA	emrB	-
+mtlR	mtlA	-
+mtlR	mtlR	-
+mtlR	mtlD	-
 nac	asnC	-
 nac	nac	-
 nac	gdhA	-
@@ -623,10 +631,12 @@ nac	nupC	+
 nac	gabT	+
 nanR	nanK	-
 nanR	nanE	-
+nanR	nanM	-
 nanR	yhcH	-
 nanR	fimB	+
 nanR	nanA	-
 nanR	nanT	-
+nanR	nanC	-
 nemR	nemA	-
 nemR	nemR	-
 nhaR	pgaB	+
@@ -783,13 +793,6 @@ rutR	fepB	-
 rutR	carB	+
 rutR	nemA	-
 rutR	carA	+
-sgrR	thiP	-
-sgrR	thiQ	-
-sgrR	tbpA	-
-sgrR	setA	+
-sgrR	yfdZ	+
-sgrR	sgrS	+
-sgrR	sgrR	-
 slyA	hlyE	+
 soxR	fumC	+
 soxR	soxR	-

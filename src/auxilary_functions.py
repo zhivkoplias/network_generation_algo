@@ -541,3 +541,24 @@ def limit_memory(maxsize):
     maxsize = (maxsize*1000000)/1024
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
+
+def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, size):
+    """
+    collect topological stats from extracted networks
+    """
+    edges = pd.read_csv(path_to_tsv, sep="\t")
+    if network_label == 'gnw':
+        edges.columns = ["tf", "tg", "strength"]
+        edges = edges[["tf", "tg"]]
+    else:
+        edges.columns = ["tf", "tg"]
+    nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
+    nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
+    edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
+    np_edges = edges_[["idx_tg", "idx_tf"]].values
+    interaction_matrix = build_Tnet(np_edges, len(nodes))
+    topological_properties = collect_topological_parameters(cfg,interaction_matrix, network_label)
+    topological_properties.append(size)
+    topological_properties.append(network_rep)
+    
+    return topological_properties
