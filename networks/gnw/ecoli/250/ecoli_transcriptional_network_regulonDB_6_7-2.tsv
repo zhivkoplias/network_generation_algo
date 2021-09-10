@@ -2,6 +2,20 @@ acrR	acrA	-
 acrR	acrB	-
 acrR	acrR	-
 acrR	micF	-
+alaS	alaS	-
+allR	glxK	-
+allR	ybbY	-
+allR	allB	-
+allR	ybbW	-
+allR	ybbV	-
+allR	glxR	-
+allR	hyi	-
+allR	allA	-
+allR	allS	-
+allR	gcl	-
+allS	allE	+
+allS	allC	+
+allS	allD	+
 baeR	mdtC	+
 baeR	mdtB	+
 baeR	mdtA	+
@@ -49,7 +63,6 @@ cpxR	rdoA	+
 cpxR	rpoE	-
 cpxR	mdtD	+
 cpxR	rseA	-
-cpxR	tomB	+
 cpxR	ppiD	+
 cpxR	csgG	-
 cpxR	csgF	-
@@ -88,7 +101,6 @@ evgA	ydeO	+
 evgA	yneN	+
 evgA	ydeP	+
 evgA	yegR	+
-evgA	emrK	+
 evgA	frc	+
 evgA	yfdX	+
 evgA	mdtE	+
@@ -114,7 +126,6 @@ gadE	gadC	+
 gadE	cadA	+
 gadE	cadB	+
 gadE	lpxD	+
-gadE	fliC	+
 gadE	gnd	+
 gadE	hlpA	+
 gadE	lpxA	+
@@ -146,7 +157,6 @@ gadX	asnB	+
 gadX	amtB	+
 gadX	dctR	+
 gadX	slp	+
-gadX	glnK	+
 gadX	mdtE	+
 gadX	mdtF	+
 gadX	ybaT	+
@@ -235,7 +245,6 @@ marA	fpr	+
 marA	nfo	+
 marA	poxB	+
 marA	purA	-
-marA	putA	+
 marA	sodA	+
 marA	tolC	+
 marA	ygiA	+
@@ -269,7 +278,6 @@ phoP	rstA	+
 phoP	slyB	+-
 phoP	mgrB	+
 phoP	yrbL	+
-phoP	dcuD	-
 phoP	argD	-
 phoP	fadL	+
 phoP	hemL	+
@@ -278,7 +286,6 @@ phoP	metL	+
 phoP	phoP	+-
 phoP	phoQ	+-
 phoP	purD	+
-phoP	purH	+
 phoP	tolC	+
 phoP	ygiA	+
 phoP	ygiB	+
@@ -287,9 +294,6 @@ phoP	rstB	+
 phoP	acrA	-
 phoP	acrB	-
 phoP	pagP	+
-phoP	treR	-
-putA	putA	-
-putA	putP	-
 rcsA	ftsA	+
 rcsA	ftsZ	+
 rcsA	osmB	+
@@ -351,7 +355,6 @@ rob	acrB	+
 rob	micF	+
 rob	ybiS	+
 rstA	ompF	-
-rstA	asr	+
 rstA	csgD	-
 rstA	csgE	-
 rstA	csgF	-
@@ -379,8 +382,6 @@ soxS	micF	+
 soxS	ybjN	+
 soxS	pqiA	+
 soxS	pqiB	+
-soxS	zinT	+
-soxS	uof	+
 soxS	zwf	+
 soxS	ygiC	+
 soxS	ygiB	+
@@ -399,7 +400,6 @@ torR	tnaB	+
 torR	gadA	-
 torR	torR	-
 torR	gadX	-
-torR	torD	+
 torR	torC	+
 torR	torA	+
 torR	yhiD	+
@@ -407,8 +407,6 @@ torR	hdeB	+
 torR	hdeA	+
 torR	tnaC	+
 torR	tnaA	+
-treR	treC	-
-treR	treB	-
 ydeO	mdtF	+
 ydeO	mdtE	+
 ydeO	gadE	+
