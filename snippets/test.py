@@ -8,7 +8,7 @@ import csv
 sys.path.insert(0, "../src")
 ART_NET_PATH = "../networks"
 
-import auxilary_functions as f
+import auxilary_functions as ff
 from generation_algorithm import *
 import joblib
 import networkx as nx
@@ -16,6 +16,7 @@ from time import sleep
 import statistics
 from argparse import ArgumentParser
 
+cfg = f.get_actual_parametrization("../src/config.json")
 
 def load_ffl_based_component():
     interaction_matrix = f.get_interaction_matrix(cfg)
@@ -41,6 +42,7 @@ def main(args):
     for rep in range(args.num_networks):
         yeast_matrix, ffl_motif, ffl_component, ffl_matrix = load_ffl_based_component()
         growth_rate = np.random.randint(1,6)*0.1
+        growth_rate = 0.9
         core_size = np.random.randint(20,30)
         artificial_matrix_ffl = generate_artificial_network(
                         yeast_matrix, motifs=ffl_motif, motifs_network=ffl_component,
@@ -49,7 +51,7 @@ def main(args):
                         growth_barabasi=args.ffl_perc)
     
         #save output // if full stats
-        #ffl_perc = artificial_matrix_ffl[3]
+        #artificial_matrix_ffl_list = artificial_matrix_ffl[1]
         #artificial_matrix_ffl = artificial_matrix_ffl[0]
 
         #GS-to-NetworkX format conversion
@@ -68,7 +70,9 @@ def main(args):
         with open(args.out_dir+'/'+network_name+'.tsv', "w", newline="") as f:
     	    writer = csv.writer(f, delimiter ='\t')
     	    writer.writerows(artificial_matrix_ffl)
-    
+        #print(ff.collect_topological_parameters(cfg, artificial_matrix_ffl, 'whatever'))
+        #print('/n')
+        print(ff.analyze_exctracted_network(cfg, args.out_dir+'/'+network_name+'.tsv', 'whatever', rep, args.final_size))
 
     return
 
@@ -87,5 +91,5 @@ if __name__ == '__main__':
 
 
 #Command to execute the script:
-#python3 test.py 103 0.4 1 test_networks/
-
+#python3 test.py 1000 0.13 1 test_networks/
+#python3 test.py 1565 0.3 1 test_networks/

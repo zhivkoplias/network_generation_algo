@@ -320,10 +320,18 @@ def get_attachment_1n2e(substrate_matrix, params):
     params - attachment parameters from previous stage of analysis (see get_attachment_params)
     """
     try:
+        print('substrate_matrix: '+str(substrate_matrix))
         tg_total = np.where(substrate_matrix.sum(axis=0) == 0)[0]
         #print('tg total: '+str(tg_total))
+        print('tg_inner_motif_1_idx: '+str(params.substrate_motifs[params.inner_motif_1_idx]))
         inner_motif = f.split_motif(params.substrate_motifs[params.inner_motif_1_idx])
-        #print('tg inner_motif: '+str(inner_motif))
+        print('tg inner_motif: '+str(inner_motif))
+        for parental_motif in inner_motif:
+            print('things_u_sum: '+str(i[parental_motif] for i in substrate_matrix))
+            print('out_degree_for_node: '+str(sum(i[parental_motif] for i in substrate_matrix)/substrate_matrix.shape[0]))
+            if sum(i[parental_motif] for i in substrate_matrix)/substrate_matrix.shape[0] >= 0.5:
+                attachment_matrix = None
+                return attachment_matrix
         graph_nx = nx.DiGraph(substrate_matrix)
         #for node in graph_nx.nodes:
             #if node in inner_motif:
@@ -388,6 +396,8 @@ def get_attachment_1n2e(substrate_matrix, params):
             compounded_matrix = nx.convert_matrix.to_numpy_array(C)
             patterns.append(compounded_matrix)
         if patterns:
+            print(f"(len patterns: {len(patterns)}")
+            print(f"rule update: {patterns}")
             attachment_matrix = patterns[np.random.randint(len(patterns))]
         else:
             attachment_matrix = None
@@ -408,6 +418,7 @@ def get_attachment_1n2e(substrate_matrix, params):
 
         except AttributeError or ValueError:
             return attachment_matrix
+
     except ValueError:
         attachment_matrix = None
         return attachment_matrix
@@ -440,6 +451,7 @@ def get_attachment_0n1e(substrate_matrix, params):
     substrate_matrix - the netwotk we are growing
     params - attachment parameters from previous stage of analysis (see get_attachment_params)
     """
+    print('substrate_matrix: '+str(substrate_matrix))
     dl_lib, ul_lib, cs_lib = prepare_motif_libs()
     inner_motif_1 = f.split_motif(params.substrate_motifs[params.inner_motif_1_idx])
     inner_motif_2 = f.split_motif(params.substrate_motifs[params.inner_motif_2_idx])
@@ -480,6 +492,7 @@ def get_attachment_0n1e(substrate_matrix, params):
     possible_links = list(set(possible_links))
     
     if possible_links:
+        print(f"rule update: {possible_links}")
         link_to_attach = possible_links[np.random.choice(range(len(possible_links)))]
     else:
         link_to_attach = None
@@ -495,6 +508,12 @@ def get_attachment_0n1e(substrate_matrix, params):
 
         common_node = list(set(neighbours[0]).intersection(set(neighbours[1])))
         all_nodes = sorted([link_to_attach[0], link_to_attach[1], common_node[0]])
+        for node in all_nodes:
+            print('things_u_sum: '+str(i[node] for i in substrate_matrix))
+            print('out_degree_for_node: '+str(sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0]))
+            if sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0] >= 0.5:
+                link_to_attach = None
+                return link_to_attach
         key_to_update = '_'.join([str(i) for i in all_nodes])
         return link_to_attach, key_to_update
     else:
@@ -510,6 +529,7 @@ def get_attachment_0n2e(substrate_matrix, params):
     substrate_matrix - the netwotk we are growing
     params - attachment parameters from previous stage of analysis (see get_attachment_params)
     """
+    print('substrate_matrix: '+str(substrate_matrix))
     inner_motif_1 = f.split_motif(params.substrate_motifs[params.inner_motif_1_idx])
     inner_motif_2 = f.split_motif(params.substrate_motifs[params.inner_motif_2_idx])
     tf_total = np.where(substrate_matrix.sum(axis=0) != 0)[0]
@@ -570,7 +590,15 @@ def get_attachment_0n2e(substrate_matrix, params):
         possible_link_pairs += link_pairs
         
     if possible_link_pairs:
+        print(f"rule update: {possible_link_pairs}")
         link_pair = possible_link_pairs[np.random.choice(range(len(possible_link_pairs)))]
+        for link in link_pair:
+            for node in link:
+                print('things_u_sum: '+str(i[node] for i in substrate_matrix))
+                print('out_degree_for_node: '+str(sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0]))
+                if sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0] >= 0.5:
+                    link_pair = None
+                    return link_pair
     else:
         link_pair = None
     
@@ -583,13 +611,16 @@ def get_attachment_0n2e(substrate_matrix, params):
         return link_pair
 
 #### Update
-def update_edge_list(art_matrix, edge_list_update=None, num_of_nodes=1, power_law_degree=0.8):
+def update_edge_list(art_matrix, edge_list_update=None, num_of_nodes=1, power_law_degree=5):
     """Barabasi's node prefferential attachment algorithm with power law attachment kernel
     art_matrix - adjacency matrix
     power_law_degree - power for in/out degree parameter
     num_of_nodes - number of iterations"""
+    #also limit out-degree for barabasi nodes?? yes // for candidate node
     #art_matrix = art_matrix.transpose()
     counter = 0
+    print('art mat')
+    print(art_matrix)
 #     print(f"starting num of edges: {art_matrix.sum()}")
     
     #list of added nodes
@@ -612,11 +643,14 @@ def update_edge_list(art_matrix, edge_list_update=None, num_of_nodes=1, power_la
 
         # take candidate node randomly
         candidate = np.random.choice(range(art_matrix.shape[0]))
+        #idea for diameter
+        while sum(i[candidate] for i in art_matrix)/art_matrix.shape[0] >= 0.5:
+            candidate = np.random.choice(range(art_matrix.shape[0]))
         random_node = candidate
 
         # calculate attachment kernel (probs)
         out_prob = f.out_prob_kernel(out_degree_arr, power_law_degree, random_node)
-        in_prob = f.in_prob_kernel(in_degree_arr, power_law_degree, random_node)
+        in_prob = f.in_prob_kernel(in_degree_arr, power_law_degree+1, random_node)
 
         # drop number of repeats (from exp)
         variants = np.linspace(0, 100, 101).astype(int)
@@ -768,7 +802,7 @@ def generate_artificial_network(
     motifs=None, 
     motifs_network=None, 
     nucleus_size=30,
-    growth_pace=0.4,
+    growth_pace=0.35,
     network_size=100,
     reference_matrix=None,
     random_seed=cfg["RANDOM_SEED"],
@@ -988,7 +1022,7 @@ def generate_artificial_network(
     #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
     #print(motifs_stats)
     #print(matrix_motifs['030C'])
-
+    sparsity = sparsity+(np.random.randint(-2,2)*0.1)
     while links_per_node < sparsity or compensated_edges < loop_edges:
         
         #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
@@ -1086,16 +1120,31 @@ def generate_artificial_network(
     print(f"links_per_node: {links_per_node}")
     print(f"Network has been successfully generated!\nTotal time spent: {datetime.now() - init_time}")
     
+    #in-degree
+    in_degree = []
+    for i in range(substrate_matrix.shape[0]):
+        in_degree.append(substrate_matrix[i:].sum()/substrate_matrix.shape[0])
+    p3 = sum(in_degree)/len(in_degree)
+    print(f"in_degree: {p3}")
+
+    #out-degree
+    out_degree = []
+    for i in range(substrate_matrix.shape[0]):
+        out_degree.append(substrate_matrix[:i].sum()/substrate_matrix.shape[0])
+    p4 = sum(out_degree)/len(out_degree)
+    print(f"out_degree: {p4}")
+    
 
     if output_format == 'adj_list':
 
         adj_list = []
 
-        for name_regulator, i in enumerate(substrate_matrix):
-            for name_regulatee, j in enumerate(substrate_matrix.T):
-                if substrate_matrix[name_regulator][name_regulatee] == 1:
+        for name_regulatee, i in enumerate(substrate_matrix.T):
+            for name_regulator, j in enumerate(substrate_matrix):
+                if substrate_matrix[name_regulatee][name_regulator] == 1:
                     adj_list.append([name_regulator, name_regulatee])
         
+        #print(substrate_matrix)
         #print(adj_list)  
         return adj_list
     
@@ -1106,3 +1155,6 @@ def generate_artificial_network(
     else:
 
         return substrate_matrix
+
+	#(node_size*sparsity)*0.1 = max_limit for out_degree
+        #nx.betweenness_centrality(G)

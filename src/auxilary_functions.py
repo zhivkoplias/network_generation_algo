@@ -498,12 +498,13 @@ def collect_topological_parameters(cfg, interaction_matrix, label):
     """returns ffl-node participation, sparsity, average in/out-degree
        requires adjacency matrix and config file
     """
-    
+    import statistics
     #ffl-part
     motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
     motifs = motifs["030T"]
     ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs], [])))
     p1 = len(ffl_nodes)/interaction_matrix.shape[0]
+    p1 = len(motifs)
 
     #sparsity
     p2 = interaction_matrix.sum()/interaction_matrix.shape[0]
@@ -513,12 +514,14 @@ def collect_topological_parameters(cfg, interaction_matrix, label):
     for i in range(interaction_matrix.shape[0]):
         in_degree.append(interaction_matrix[i:].sum()/interaction_matrix.shape[0])
     p3 = sum(in_degree)/len(in_degree)
+    #p3 = statistics.median(in_degree)
 
     #out-degree
     out_degree = []
     for i in range(interaction_matrix.shape[0]):
         out_degree.append(interaction_matrix[:i].sum()/interaction_matrix.shape[0])
     p4 = sum(out_degree)/len(out_degree)
+    #p4 = statistics.median(out_degree)
     
     params = list(map(lambda ids: round(ids, 3), [p1, p2, p3, p4]))
     params.append(label)
@@ -557,6 +560,7 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
     edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
     np_edges = edges_[["idx_tg", "idx_tf"]].values
     interaction_matrix = build_Tnet(np_edges, len(nodes))
+    #print(interaction_matrix)
     topological_properties = collect_topological_parameters(cfg,interaction_matrix, network_label)
     topological_properties.append(size)
     topological_properties.append(network_rep)
