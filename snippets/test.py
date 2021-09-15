@@ -44,6 +44,7 @@ def main(args):
         growth_rate = np.random.randint(1,6)*0.1
         growth_rate = 0.9
         core_size = np.random.randint(20,30)
+        core_size = 100
         artificial_matrix_ffl = generate_artificial_network(
                         yeast_matrix, motifs=ffl_motif, motifs_network=ffl_component,
                         reference_matrix=ffl_matrix, growth_pace=growth_rate,

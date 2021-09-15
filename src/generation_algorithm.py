@@ -1090,6 +1090,10 @@ def generate_artificial_network(
         links_per_node = substrate_matrix.sum()/substrate_matrix.shape[0]
         #
         
+    #check final size
+    while substrate_matrix.shape != (network_size, network_size):
+        substrate_matrix = np.delete(substrate_matrix, -1, 0)
+        substrate_matrix = np.delete(substrate_matrix, -1, 1)
 
     #return shuffled matrix
     if shuffled:
