@@ -840,6 +840,9 @@ def generate_artificial_network(
     np.random.seed(random_seed)
     init_time = datetime.now()
     
+    import timeit
+    start_time = timeit.default_timer()
+    
     # check if motifs are provided and search them otherwise 
     if motifs is None:
         print("Motifs are not provided. Motif search is in progress...")
@@ -1022,7 +1025,8 @@ def generate_artificial_network(
     #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
     #print(motifs_stats)
     #print(matrix_motifs['030C'])
-    sparsity = sparsity+(np.random.randint(-2,2)*0.1)
+    sparsity = sparsity+(np.random.uniform(-1,1)*0.1)
+    #sparsity = sparsity+(np.random.randint(-2,2)*0.1)
     while links_per_node < sparsity or compensated_edges < loop_edges:
         
         #matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
@@ -1112,6 +1116,10 @@ def generate_artificial_network(
     ffl_perc = nodes_in_ffl/substrate_matrix.shape[0]
     
     total_time_spent = str(f"{datetime.now() - init_time}")
+    
+    stop_time = timeit.default_timer()
+    run_time = stop_time - start_time
+
     #calculate loops once again
     matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
     print(motifs_stats)
@@ -1139,14 +1147,14 @@ def generate_artificial_network(
     print(f"out_degree: {p4}")
     
 
+    adj_list = []
+
+    for name_regulatee, i in enumerate(substrate_matrix.T):
+        for name_regulator, j in enumerate(substrate_matrix):
+            if substrate_matrix[name_regulatee][name_regulator] == 1:
+                adj_list.append([name_regulator, name_regulatee])
+
     if output_format == 'adj_list':
-
-        adj_list = []
-
-        for name_regulatee, i in enumerate(substrate_matrix.T):
-            for name_regulator, j in enumerate(substrate_matrix):
-                if substrate_matrix[name_regulatee][name_regulator] == 1:
-                    adj_list.append([name_regulator, name_regulatee])
         
         #print(substrate_matrix)
         #print(adj_list)  
@@ -1156,9 +1164,9 @@ def generate_artificial_network(
 
         return substrate_matrix, total_time_spent, links_per_node, ffl_perc
     
-    else:
+    elif output_format == 'time_test':
 
-        return substrate_matrix
+        return substrate_matrix, run_time, 1-ffl_perc
 
 	#(node_size*sparsity)*0.1 = max_limit for out_degree
         #nx.betweenness_centrality(G)

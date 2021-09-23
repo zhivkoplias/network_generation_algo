@@ -8,7 +8,7 @@ import csv
 sys.path.insert(0, "../src")
 ART_NET_PATH = "../networks"
 
-import auxilary_functions as ff
+import auxilary_functions as functions
 from generation_algorithm import *
 import joblib
 import networkx as nx
@@ -16,24 +16,24 @@ from time import sleep
 import statistics
 from argparse import ArgumentParser
 
-cfg = f.get_actual_parametrization("../src/config.json")
+cfg = functions.get_actual_parametrization("../src/config.json")
 
 def load_ffl_based_component():
-    interaction_matrix = f.get_interaction_matrix(cfg)
-    motifs, counter = f.motif_search(cfg, interaction_matrix, batch_size=10000)
+    interaction_matrix = functions.get_interaction_matrix(cfg)
+    motifs, counter = functions.motif_search(cfg, interaction_matrix, batch_size=10000)
     motifs_orig = motifs["030T"]
 
     ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs_orig], [])))
     interaction_matrix_ffl = np.zeros((len(ffl_nodes), len(ffl_nodes)))
     for motif in motifs_orig:
-        motif = f.split_motif(motif)
+        motif = functions.split_motif(motif)
         motif_new = list(ffl_nodes.index(x) for x in motif)
         interaction_matrix_ffl[np.ix_(motif_new, motif_new)] = \
         interaction_matrix[np.ix_(motif, motif)]
     interaction_matrix_ffl.shape, interaction_matrix_ffl.sum()
 
     # Vertex-based motif network on FFL
-    motifs_network = f.build_vmn(motifs_orig, verbose=True)
+    motifs_network = functions.build_vmn(motifs_orig, verbose=True)
     V = nx.Graph(motifs_network)
     nx.is_connected(V)
     return interaction_matrix, motifs_orig, motifs_network, interaction_matrix_ffl
@@ -44,13 +44,16 @@ def main(args):
         growth_rate = np.random.randint(1,6)*0.1
         growth_rate = 0.9
         core_size = np.random.randint(20,30)
-        core_size = 100
-        artificial_matrix_ffl = generate_artificial_network(
+        core_size = 25
+        artificial_matrix_ffl, time_generation, p1_nodes = generate_artificial_network(
                         yeast_matrix, motifs=ffl_motif, motifs_network=ffl_component,
                         reference_matrix=ffl_matrix, growth_pace=growth_rate,
                         network_size=args.final_size, nucleus_size=core_size,
                         growth_barabasi=args.ffl_perc)
     
+        #time_generation = artificial_matrix_ffl[1]
+        #artificial_matrix_ffl = artificial_matrix_ffl[0]
+        
         #save output // if full stats
         #artificial_matrix_ffl_list = artificial_matrix_ffl[1]
         #artificial_matrix_ffl = artificial_matrix_ffl[0]
@@ -71,9 +74,14 @@ def main(args):
         with open(args.out_dir+'/'+network_name+'.tsv', "w", newline="") as f:
     	    writer = csv.writer(f, delimiter ='\t')
     	    writer.writerows(artificial_matrix_ffl)
-        #print(ff.collect_topological_parameters(cfg, artificial_matrix_ffl, 'whatever'))
+        #print(ff.collect_topological_parameters(cfg, artificial_matrix_ffl, 'stats'))
         #print('/n')
-        print(ff.analyze_exctracted_network(cfg, args.out_dir+'/'+network_name+'.tsv', 'whatever', rep, args.final_size))
+        #print(ff.analyze_exctracted_network(cfg, args.out_dir+'/'+network_name+'.tsv', 'whatever', rep, args.final_size))
+        
+        #collect ffl-component // if output is 'time_test'
+        #print(functions.collect_ffl_component(cfg, artificial_matrix_ffl))
+        print(time_generation)
+        print(p1_nodes)
 
     return
 

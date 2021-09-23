@@ -22,6 +22,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy import sparse
 import resource
+import csv
 
 import networkx as nx
 from networkx.algorithms.distance_measures import diameter
@@ -109,7 +110,7 @@ def print_equivalents(cfg):
         print()
 
         
-def get_triad_codes():
+def get_triad_codes(path=None):
     motifs = json.load(open("../motifs_collection.json", "r"))
     salt = np.array([2**i for i in range(6)])
     mapping = {x: i for i, x in enumerate(motifs.keys())}
@@ -528,6 +529,20 @@ def collect_topological_parameters(cfg, interaction_matrix, label):
     
     return params
 
+def collect_ffl_component(cfg, interaction_matrix):
+    """returns ffl-node participation
+       requires adjacency matrix and config file
+    """
+    import statistics
+    #ffl-part
+    motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
+    motifs = motifs["030T"]
+    ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs], [])))
+    p1 = len(ffl_nodes)/interaction_matrix.shape[0]
+    
+    return p1
+
+
 def get_free_memory():
     with open('/proc/meminfo', 'r') as mem:
         free_memory = 0
@@ -555,6 +570,10 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
         edges = edges[["tf", "tg"]]
     else:
         edges.columns = ["tf", "tg"]
+    edges['tf'].astype(str)
+    edges['tg'].astype(str)
+    edges.columns = ["tf", "tg"]
+    
     nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
     nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
     edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
@@ -566,3 +585,79 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
     topological_properties.append(network_rep)
     
     return topological_properties
+
+def create_nx_network(n_trials,sparsity,size,out_dir):
+    """
+    requires number of networks, desired sparsity, desired network size, and output dir
+    creates a set of networks (adjacency list format)
+    """
+    import numpy as np
+    import networkx as nx
+    import random
+    import os
+
+    for number in range(n_trials):
+        test1 = nx.scale_free_graph(int(size), alpha=0.85, beta=0.1, gamma=0.05, delta_in=0.2, delta_out=0)
+        edges1 = test1.number_of_edges()
+        edge_list = list(set([e for e in test1.edges()]))
+        edge_list = [list(ele) for ele in edge_list]
+        nx_size = len(list(set([e for l in edge_list for e in l])))
+        edges = pd.DataFrame(edge_list, columns=['tf', 'tg'])
+
+        nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
+        nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
+        edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
+        np_edges = edges_[["idx_tg", "idx_tf"]].values
+
+        interaction_matrix = build_Tnet(np_edges, len(nodes))
+        interaction_matrix = interaction_matrix.T
+
+        links_per_node = interaction_matrix.sum()/interaction_matrix.shape[0]
+        nodes = list(range(0, len(interaction_matrix)))
+        
+        #sparsity = sparsity+(np.random.uniform(-2,2)*0.1)
+
+        while links_per_node<sparsity:
+            #print(links_per_node)
+            #print(interaction_matrix)
+            #calculate in, out degree
+            out_degree = interaction_matrix.sum(axis=1)
+            in_degree = interaction_matrix.sum(axis=0)
+
+            #calculate probs
+            in_probs = pd.Series(in_degree/sum(in_degree), nodes)
+            out_probs = pd.Series(out_degree/sum(out_degree), nodes)
+
+            #nodes that create edge
+            regulator = np.random.choice(out_probs.index, p=out_probs.values)
+            regulatee = np.random.choice(in_probs.index)
+            if regulatee == regulator:
+                while regulatee == regulator:
+                    regulatee = np.random.choice(in_probs.index)
+                    #print([regulator, regulatee])
+
+            #add edge
+            interaction_matrix[regulator,regulatee] = 1
+            links_per_node = interaction_matrix.sum()/interaction_matrix.shape[0]
+            #print(links_per_node)
+
+        #create adj list
+        adj_list = []
+        for name_regulatee, i in enumerate(interaction_matrix.T):
+            for name_regulator, j in enumerate(interaction_matrix):
+                if interaction_matrix[name_regulatee][name_regulator] == 1:
+                    adj_list.append([name_regulator, name_regulatee])
+        
+        #file name
+        network_name = '_'.join(str(x) for x in ['scale_free_nx',number,'nodes',len(nodes)])
+        
+        #out dir
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
+        
+        #store adjacency list of nx network:    
+        with open(out_dir+'/'+network_name+'.tsv', "w", newline="") as file:
+            writer = csv.writer(file, delimiter ='\t')
+            writer.writerows(adj_list)
+        
+    return
