@@ -45,7 +45,8 @@ def main(args):
         growth_rate = 0.9
         #core_size = np.random.randint(20,30)
         core_size = 25
-        artificial_matrix_ffl, time_generation, p1_nodes = generate_artificial_network(
+	#time_generation, p1_nodes --> for output "time_test"
+        artificial_matrix_ffl = generate_artificial_network(
                         yeast_matrix, random_seed = np.random.randint(1,100),motifs=ffl_motif, motifs_network=ffl_component,
                         reference_matrix=ffl_matrix, growth_pace=growth_rate,
                         network_size=args.final_size, nucleus_size=core_size,
@@ -80,8 +81,10 @@ def main(args):
         
         #collect ffl-component // if output is 'time_test'
         #print(functions.collect_ffl_component(cfg, artificial_matrix_ffl))
-        print(time_generation)
-        print(p1_nodes)
+        
+	#for "time-test" output
+	#print(time_generation)
+        #print(p1_nodes)
 
     return
 
