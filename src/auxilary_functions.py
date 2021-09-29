@@ -365,6 +365,20 @@ def get_shuffled_mp(params):
     nswaps = params["nswaps"]
     return get_shuffled_matrix(matrix, nswaps)
 
+def shuffle_network(matrix, threshold=0.75):
+    """
+    """
+    complete = False
+    swaps = (matrix.sum())*0.2
+    while not complete:
+        shuffled_matrix = get_shuffled_matrix(matrix, swaps)
+        shuffled_score = 1-corruption_score(matrix, shuffled_matrix)
+        #print(shiffled_score)
+        swaps += (matrix.sum())*0.2
+        if shuffled_score >= threshold:
+            complete = True
+    return shuffled_matrix
+
 def generate_random_networks(cfg, interaction_matrix, nsims, nsteps, nswaps):
     counters = []
     for _ in range(nsteps):
@@ -400,7 +414,7 @@ def build_zscores_report(counters, counter_orig):
             distr[triad].append(n)
     distr = {x: np.array(y) for x, y in distr.items()}
     zscores_report = pd.DataFrame(
-        index=["N_real", "mean(N_rand)", "sd(N_rand)", "Z-score", "P-value", "Result"]
+        index=["N_real", "mean(N_rand)", "sd(N_rand)", "Z-score", "P-value"]
     )
     for motif in counters[0].keys():
         n_hypothesis = len(counters[0].keys())
@@ -420,8 +434,7 @@ def build_zscores_report(counters, counter_orig):
             np.mean(distr[motif]),
             np.std(distr[motif]),
             zscore,
-            pvalue,
-            result
+            pvalue
         ]
         zscores_report[motif] = result_list
     return zscores_report.T
@@ -560,30 +573,51 @@ def limit_memory(maxsize):
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
-def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, size):
+def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, size, stability_motifs=False):
     """
     collect topological stats from extracted networks
     """
-    edges = pd.read_csv(path_to_tsv, sep="\t")
-    if network_label == 'gnw':
-        edges.columns = ["tf", "tg", "strength"]
-        edges = edges[["tf", "tg"]]
+    import networkx as nx
+    if network_label == 'randg' or network_label == 'dag':
+        interaction_matrix = np.array(pd.read_csv(path_to_tsv, header = None, sep=','))
+        interaction_matrix = np.apply_along_axis(list, 1, interaction_matrix)
+        interaction_matrix = (interaction_matrix > 0).astype(np.int_)
+        print(interaction_matrix)
     else:
+        edges = pd.read_csv(path_to_tsv, sep="\t")
+        if network_label == 'gnw':
+            edges.columns = ["tf", "tg", "strength"]
+            edges = edges[["tf", "tg"]]
+        else:
+            edges.columns = ["tf", "tg"]
+        edges['tf'].astype(str)
+        edges['tg'].astype(str)
         edges.columns = ["tf", "tg"]
-    edges['tf'].astype(str)
-    edges['tg'].astype(str)
-    edges.columns = ["tf", "tg"]
     
-    nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
-    nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
-    edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
-    np_edges = edges_[["idx_tg", "idx_tf"]].values
-    interaction_matrix = build_Tnet(np_edges, len(nodes))
+        nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
+        nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
+        edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
+        np_edges = edges_[["idx_tg", "idx_tf"]].values
+        interaction_matrix = build_Tnet(np_edges, len(nodes))
+    
+    #if shuffled:
+    #    interaction_matrix = shuffle_network(interaction_matrix)
     #print(interaction_matrix)
     topological_properties = collect_topological_parameters(cfg,interaction_matrix, network_label)
     topological_properties.append(size)
     topological_properties.append(network_rep)
     
+    if stability_motifs:
+        #ffl_counts = topological_properties[0]
+        #graph_nx = nx.DiGraph(interaction_matrix)
+        #cycles_counts = list(nx.algorithms.cycles.simple_cycles(graph_nx))
+        #topological_properties = [ffl_counts, cycles_counts]
+        motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
+        shuffled_counters = generate_random_networks(cfg, interaction_matrix, 10, 10, 60000)
+        #topological_properties = counter
+        #topological_properties = {k:len(v) for k, v in counter.items()}
+        topological_properties = build_zscores_report(shuffled_counters, counter)
+
     return topological_properties
 
 def create_nx_network(n_trials,sparsity,size,out_dir):

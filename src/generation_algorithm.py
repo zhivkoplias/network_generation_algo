@@ -25,8 +25,7 @@ import tracemalloc
 
 
 def get_network_nucleus(
-    interaction_matrix, motifs, motifs_network, min_size, random_seed=cfg["RANDOM_SEED"]
-):
+    interaction_matrix, motifs, motifs_network, min_size, random_seed):
     """
     Getting subsample from real network as a nucleus for artificial network
     ________________________________________________________________________
@@ -860,7 +859,7 @@ def generate_artificial_network(
     
     # nucleus subsampling
     substrate_matrix = get_network_nucleus(
-        interaction_matrix, motifs, motifs_network, min_size=nucleus_size
+        interaction_matrix, motifs, motifs_network, min_size=nucleus_size, random_seed=random_seed
     )
     print(f"Nucleus matrix shape: {substrate_matrix.shape}")
     network_params = get_network_params(substrate_matrix, verbose=False)
@@ -1100,18 +1099,8 @@ def generate_artificial_network(
         substrate_matrix = np.delete(substrate_matrix, -1, 1)
 
     #return shuffled matrix
-    if shuffled:
-        complete = False
-        swaps = (substrate_matrix.sum())*0.2
-        while not complete:
-            shuffled_matrix = f.get_shuffled_matrix(substrate_matrix, swaps)
-            shiffled_score = 1-f.corruption_score(substrate_matrix, shuffled_matrix)
-            print(shiffled_score)
-            swaps += (substrate_matrix.sum())*0.2
-            if shiffled_score >= 0.77:
-                complete = True
-                
-        substrate_matrix = shuffled_matrix
+    if shuffled:      
+        substrate_matrix = f.shuffle_network(substrate_matrix)
                 
     ffl_perc = nodes_in_ffl/substrate_matrix.shape[0]
     
