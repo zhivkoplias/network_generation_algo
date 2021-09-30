@@ -239,6 +239,9 @@ argR	argG	-
 argR	argI	-
 argR	argR	-
 argR	carA	-
+arsR	arsR	-
+arsR	arsC	-
+arsR	arsB	-
 ascG	ascB	-
 ascG	ascF	-
 ascG	ascG	-
@@ -268,6 +271,9 @@ betI	betI	-
 bglJ	bglG	+
 bglJ	bglF	+
 bglJ	bglB	+
+birA	bioC	-
+birA	bioA	-
+birA	bioF	-
 bolA	ampC	+-
 bolA	dacC	+-
 cadC	cadB	+
@@ -364,6 +370,7 @@ cpxR	rseB	-
 cpxR	yqjA	+
 cpxR	mzrA	+
 cpxR	acrD	+
+creB	creD	+
 crp	murP	+
 crp	hyfC	+
 crp	hyfD	+
@@ -819,10 +826,6 @@ cueR	moaE	-
 cueR	moaC	-
 cueR	cueO	+
 cueR	copA	+
-cynR	cynS	+
-cynR	cynT	+
-cynR	cynX	+
-cynR	cynR	-
 cysB	tauA	+
 cysB	tauB	+
 cysB	tauC	+
@@ -882,6 +885,12 @@ dgsA	ptsG	-
 dgsA	dgsA	-
 dgsA	ptsH	-
 dgsA	manZ	-
+dhaR	dhaM	+
+dhaR	dhaL	+
+dhaR	dhaK	+
+dhaR	dhaR	-
+dicA	dicB	-
+dicA	ydfD	-
 dnaA	yjeV	-
 dnaA	rpoH	-
 dnaA	recF	-
@@ -2738,8 +2747,6 @@ lsrR	tam	-
 lsrR	lsrD	-
 lsrR	lsrB	-
 lsrR	lsrF	-
-lysR	lysR	-
-lysR	lysA	+
 malI	malI	-
 malI	malY	-
 malI	malX	-
@@ -2869,10 +2876,6 @@ mprA	emrA	-
 mprA	acrB	-
 mprA	acrA	-
 mprA	emrB	-
-mqsA	mqsA	-
-mqsR	mqsR	-
-mqsR	mqsA	-
-mqsA	mqsR	-
 mtlR	mtlA	-
 mtlR	mtlR	-
 mtlR	mtlD	-
@@ -3545,13 +3548,6 @@ sdiA	ydiV	+
 sdiA	ftsZ	-
 sdiA	ftsQ	+-
 sdiA	ftsA	-
-sgrR	thiP	-
-sgrR	thiQ	-
-sgrR	tbpA	-
-sgrR	setA	+
-sgrR	yfdZ	+
-sgrR	sgrS	+
-sgrR	sgrR	-
 slyA	hlyE	+
 soxR	fumC	+
 soxR	soxR	-
