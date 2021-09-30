@@ -17,7 +17,12 @@ agaR	agaI	-
 agaR	kbaZ	-
 agaR	agaR	-
 alaS	alaS	-
-alpA	intA	+
+rpiR	rpiB	-
+rpiR	alsC	-
+rpiR	alsA	-
+rpiR	alsB	-
+rpiR	rpiR	-
+rpiR	alsE	-
 appY	appC	+
 appY	yccB	+
 appY	appB	+
@@ -269,11 +274,6 @@ betI	betI	-
 bglJ	bglG	+
 bglJ	bglF	+
 bglJ	bglB	+
-birA	bioD	-
-birA	bioC	-
-birA	bioB	-
-birA	bioA	-
-birA	bioF	-
 bolA	ampC	+-
 bolA	dacC	+-
 cadC	cadB	+
@@ -884,6 +884,10 @@ dgsA	ptsG	-
 dgsA	dgsA	-
 dgsA	ptsH	-
 dgsA	manZ	-
+dhaR	dhaM	+
+dhaR	dhaL	+
+dhaR	dhaK	+
+dhaR	dhaR	-
 dnaA	yjeV	-
 dnaA	rpoH	-
 dnaA	recF	-
@@ -2734,8 +2738,6 @@ lsrR	tam	-
 lsrR	lsrD	-
 lsrR	lsrB	-
 lsrR	lsrF	-
-lysR	lysR	-
-lysR	lysA	+
 malI	malI	-
 malI	malY	-
 malI	malX	-
@@ -2813,6 +2815,9 @@ mhpR	mhpF	+
 mhpR	mhpC	+
 mhpR	mhpD	+
 mhpR	mhpB	+
+mngR	mngR	-
+mngR	mngA	-
+mngR	mngB	-
 mntR	mntH	-
 modE	modB	-
 modE	hycI	+
@@ -3676,10 +3681,6 @@ yiaJ	sgbE	-
 yiaJ	sgbU	-
 yiaJ	sgbH	-
 yiaJ	lyxK	-
-yefM	yoeB	-
-yefM	yefM	-
-yoeB	yefM	-
-yoeB	yoeB	-
 zntR	zntA	+
 zraR	zraP	+
 zraR	zraR	+

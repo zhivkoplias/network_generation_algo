@@ -583,13 +583,6 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
         interaction_matrix = np.apply_along_axis(list, 1, interaction_matrix)
         interaction_matrix = (interaction_matrix > 0).astype(np.int_)
         print(interaction_matrix)
-
-    elif network_label == 'fflatt':
-        interaction_matrix = np.array(pd.read_csv(path_to_tsv, header = None, sep=','))
-        interaction_matrix = np.apply_along_axis(list, 1, interaction_matrix)
-        interaction_matrix = (interaction_matrix > 0).astype(np.int_)
-        interaction_matrix = interaction_matrix.T
-        print(interaction_matrix)
     else:
         edges = pd.read_csv(path_to_tsv, sep="\t")
         if network_label == 'gnw':
