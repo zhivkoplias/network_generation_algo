@@ -1,5 +1,5 @@
 import auxilary_functions as f
-cfg = f.get_actual_parametrization("../src/config.json")
+cfg = f.get_actual_parametrization("../src/config-human.json")
 #cfg = f.update_cfg("../src/config.json", "NETWORK_TO_SEARCH_IN", "yeast")
 import psutil
 import os
