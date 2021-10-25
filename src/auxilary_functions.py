@@ -586,8 +586,9 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
     else:
         edges = pd.read_csv(path_to_tsv, sep="\t")
         if network_label == 'gnw':
-            edges.columns = ["tf", "tg", "strength"]
-            edges = edges[["tf", "tg"]]
+            edges.columns = ["tf", "tg"]
+            #edges.columns = ["tf", "tg", "strength"]
+            #edges = edges[["tf", "tg"]]
         else:
             edges.columns = ["tf", "tg"]
         edges['tf'].astype(str)
@@ -709,8 +710,9 @@ def analyze_connectivity(path_to_tsv, network_label, network_rep, size):
     else:
         edges = pd.read_csv(path_to_tsv, sep="\t")
         if network_label == 'gnw':
-            edges.columns = ["tf", "tg", "strength"]
-            edges = edges[["tf", "tg"]]
+            edges.columns = ["tf", "tg"]
+            #edges.columns = ["tf", "tg", "strength"]
+            #edges = edges[["tf", "tg"]]
         else:
             edges.columns = ["tf", "tg"]
         edges['tf'].astype(str)
