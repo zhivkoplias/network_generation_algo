@@ -808,7 +808,8 @@ def generate_artificial_network(
     growth_barabasi=cfg["GROWTH_BARABASI"],
     sparsity=cfg["SPARSITY"],
     shuffled=cfg["SHUFFLED"],
-    output_format=cfg["OUTPUT"]
+    output_format=cfg["OUTPUT"],
+    disrupt_cycles=cfg["NO_CYCLES"]
 ):
     
     """
@@ -1017,7 +1018,10 @@ def generate_artificial_network(
     #print(substrate_matrix.shape)
     
     #check for sparsity
-    loop_edges, substrate_matrix = filter_for_loops(substrate_matrix)
+    if disrupt_cycles:
+    	loop_edges, substrate_matrix = filter_for_loops(substrate_matrix)
+    else:
+        loop_edges = 0
     compensated_edges = 0
     
     #check if loops were deleted
