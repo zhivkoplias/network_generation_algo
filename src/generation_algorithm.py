@@ -70,11 +70,11 @@ def get_network_nucleus(
 
 #The support set for the number of shared nodes is {1, 2}. We are not considering 0 as we focus only on the largest connected component of FFL VMN which actually contains all of the FFLs in the yeast Tnet and nearly all (99%) in E.coli Tnet
 
-def get_network_params(interaction_matrix, verbose=False,motif_search=True,known_motifs=False):
+def get_network_params(interaction_matrix, config_file, verbose=False,motif_search=True,known_motifs=False):
     # motif search
     if motif_search:
         motifs, counter = f.motif_search(
-        cfg, interaction_matrix, batch_size=10000, verbose=False
+        config_file, interaction_matrix, batch_size=10000, verbose=False
     )
         motifs = motifs["030T"]
     else:
@@ -769,8 +769,8 @@ def contatenate_matrices(matrix, edge_list):
     
     return final_mat
 
-def filter_for_loops(substrate_matrix):
-    matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+def filter_for_loops(substrate_matrix, config_file):
+    matrix_motifs, motifs_stats = f.motif_search(config_file, substrate_matrix, batch_size=10000)
     loops_edges = 0
     
     #iterate over all 3-node loops in network
@@ -798,18 +798,14 @@ def filter_for_loops(substrate_matrix):
 
 def generate_artificial_network(
     interaction_matrix,
+    config_file,
+    random_seed,
     motifs=None, 
     motifs_network=None, 
     nucleus_size=30,
     growth_pace=0.35,
     network_size=100,
-    reference_matrix=None,
-    random_seed=cfg["RANDOM_SEED"],
-    growth_barabasi=cfg["GROWTH_BARABASI"],
-    sparsity=cfg["SPARSITY"],
-    shuffled=cfg["SHUFFLED"],
-    output_format=cfg["OUTPUT"],
-    disrupt_cycles=cfg["NO_CYCLES"]
+    reference_matrix=None
 ):
     
     """
@@ -836,10 +832,18 @@ def generate_artificial_network(
     sparsity (int, default=3)
         Average number of links per node in resulting network
     """
+    
     assert (motifs is None) & (motifs_network is None) | (motifs is not None)
     np.random.seed(random_seed)
     init_time = datetime.now()
     
+    random_seed=config_file["RANDOM_SEED"]
+    growth_barabasi=config_file["FFL_PERCENTAGES"]
+    sparsity=config_file["SPARSITY"]
+    shuffled=config_file["SHUFFLED"]
+    output_format=config_file["OUTPUT"]
+    disrupt_cycles=config_file["NO_CYCLES"]
+
     import timeit
     start_time = timeit.default_timer()
     
@@ -847,7 +851,7 @@ def generate_artificial_network(
     if motifs is None:
         print("Motifs are not provided. Motif search is in progress...")
         motifs_orig, counter_orig = f.motif_search(
-            cfg, interaction_matrix, batch_size=10000, verbose=False
+            config_file, interaction_matrix, batch_size=10000, verbose=False
         )
         motifs = motifs_orig["030T"]
         print()
@@ -863,11 +867,11 @@ def generate_artificial_network(
         interaction_matrix, motifs, motifs_network, min_size=nucleus_size, random_seed=random_seed
     )
     print(f"Nucleus matrix shape: {substrate_matrix.shape}")
-    network_params = get_network_params(substrate_matrix, verbose=False)
+    network_params = get_network_params(substrate_matrix, config_file, verbose=False)
     print()
     if reference_matrix is not None:
         #print("Reference matrix params")
-        fix_network_params = get_network_params(reference_matrix, verbose=False)
+        fix_network_params = get_network_params(reference_matrix, config_file, verbose=False)
         print()
     else:
         fix_network_params = None
@@ -879,7 +883,7 @@ def generate_artificial_network(
     edges = 0
     barabasi_entering = 0
 
-    N_CORES = mp.cpu_count() if cfg["N_CORES_TO_USE"] == -1 else cfg["N_CORES_TO_USE"]
+    N_CORES = mp.cpu_count() if config_file["N_CORES_TO_USE"] == -1 else config_file["N_CORES_TO_USE"]
     while substrate_matrix.shape[0]+edges < network_size:
         
      #   print(f"substrate_matrix.shape[0]: {substrate_matrix.shape[0]}")
@@ -936,7 +940,7 @@ def generate_artificial_network(
         else:
             # Calling psutil.cpu_precent() for 2 seconds
             #print('The CPU usage is: ', psutil.cpu_percent(2))
-            network_params = get_network_params(substrate_matrix, verbose=False, motif_search=False,
+            network_params = get_network_params(substrate_matrix, config_file, verbose=False, motif_search=False,
                                                 known_motifs = network_params.substrate_motifs)
             if fix_network_params is not None: 
                 Params = namedtuple(
@@ -1019,7 +1023,7 @@ def generate_artificial_network(
     
     #check for sparsity
     if disrupt_cycles:
-    	loop_edges, substrate_matrix = filter_for_loops(substrate_matrix)
+    	loop_edges, substrate_matrix = filter_for_loops(substrate_matrix, config_file)
     else:
         loop_edges = 0
     compensated_edges = 0
@@ -1114,7 +1118,7 @@ def generate_artificial_network(
     run_time = stop_time - start_time
 
     #calculate loops once again
-    matrix_motifs, motifs_stats = f.motif_search(cfg, substrate_matrix, batch_size=10000)
+    matrix_motifs, motifs_stats = f.motif_search(config_file, substrate_matrix, batch_size=10000)
     print(motifs_stats)
     print(matrix_motifs['030C'])
     #print(f"loop_edges: {loop_edges}")

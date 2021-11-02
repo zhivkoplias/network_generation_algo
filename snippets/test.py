@@ -15,12 +15,14 @@ import networkx as nx
 from time import sleep
 import statistics
 from argparse import ArgumentParser
+import json
 
-cfg = functions.get_actual_parametrization("../src/config.json")
+#cfg = functions.get_actual_parametrization("../src/config.json")
 
 def load_ffl_based_component():
-    interaction_matrix = functions.get_interaction_matrix(cfg)
-    motifs, counter = functions.motif_search(cfg, interaction_matrix, batch_size=10000)
+    config_file = json.loads(args.config_file)
+    interaction_matrix = functions.get_interaction_matrix(config_file)
+    motifs, counter = functions.motif_search(config_file, interaction_matrix, batch_size=10000)
     motifs_orig = motifs["030T"]
 
     ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs_orig], [])))
@@ -46,11 +48,13 @@ def main(args):
         #core_size = np.random.randint(20,30)
         core_size = 25
 	#time_generation, p1_nodes --> for output "time_test"
+
+        config_file = json.loads(args.config_file)
         artificial_matrix_ffl = generate_artificial_network(
-                        yeast_matrix, random_seed = np.random.randint(1,100),motifs=ffl_motif, motifs_network=ffl_component,
+                        yeast_matrix, config_file, random_seed = np.random.randint(1,100),
+                        motifs=ffl_motif, motifs_network=ffl_component,
                         reference_matrix=ffl_matrix, growth_pace=growth_rate,
-                        network_size=args.final_size, nucleus_size=core_size,
-                        growth_barabasi=args.ffl_perc)
+                        network_size=args.final_size, nucleus_size=core_size)
     
         #time_generation = artificial_matrix_ffl[1]
         #artificial_matrix_ffl = artificial_matrix_ffl[0]
@@ -71,7 +75,7 @@ def main(args):
     
     
         #save output // if adj list
-        network_name = '_'.join(str(x) for x in ['fflatt_transcriptional_network',rep,'nodes',args.final_size,'ffl_perc',args.ffl_perc])
+        network_name = '_'.join(str(x) for x in ['fflatt_transcriptional_network',rep,'nodes',args.final_size])
         with open(args.out_dir+'/'+network_name+'.tsv', "w", newline="") as f:
     	    writer = csv.writer(f, delimiter ='\t')
     	    writer.writerows(artificial_matrix_ffl)
@@ -90,10 +94,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument("config_file", type=str, nargs='?', const=1, default='.',
+                            help="Config file")
     parser.add_argument("final_size", type=int,
                             help="Number of nodes in final network")
-    parser.add_argument("ffl_perc", type=float,
-                            help="Percentage of FFL-nodes")
     parser.add_argument("num_networks", type=int, nargs='?', const=1, default='1',
                             help="Number of networks to generate")
     parser.add_argument("out_dir", type=str, nargs='?', const=1, default='.',
@@ -102,6 +106,5 @@ if __name__ == '__main__':
     main(args)
 
 
-#Command to execute the script:
-#python3 test.py 1000 0.13 1 test_networks/
-#python3 test.py 1565 0.3 1 test_networks/
+#Command example to execute the script:
+#python3 test.py "../src/config.json" 1500 0.3 1 test_networks/

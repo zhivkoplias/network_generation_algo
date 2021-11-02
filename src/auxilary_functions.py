@@ -71,10 +71,10 @@ def update_cfg(path, param, value, verbose=False):
     return cfg
 
 
-def get_interaction_matrix(cfg):
+def get_interaction_matrix(config_file):
     
     cwd = os.path.abspath(os.path.join(os.getcwd(), os.pardir))    
-    network = cfg["NETWORK_TO_SEARCH_IN"]
+    network = config_file["NETWORK_TO_SEARCH_IN"]
     interaction_matrix = joblib.load(
         os.path.join(cwd, "networks", network, f"interaction_matrix.gz")
     )
@@ -99,11 +99,11 @@ def get_equivalents(core_pattern):
     return pattern_variants
 
 
-def print_equivalents(cfg):
-    m = build_motif_from_string(json.load(open("./motifs_collection.json", "r"))[cfg["MOTIF_TO_SEARCH_FOR"]])
-    if cfg["SELFLOOPS_INCLUDED"]: m += np.diag([1]*3)
+def print_equivalents(config_file):
+    m = build_motif_from_string(json.load(open("./motifs_collection.json", "r"))[config_file["MOTIF_TO_SEARCH_FOR"]])
+    if config_file["SELFLOOPS_INCLUDED"]: m += np.diag([1]*3)
     equivalents = get_equivalents(m)
-    print(f"""Equivalent forms for {cfg["MOTIF_TO_SEARCH_FOR"]}{" with selfloops" if cfg["SELFLOOPS_INCLUDED"] else ""}\
+    print(f"""Equivalent forms for {config_file["MOTIF_TO_SEARCH_FOR"]}{" with selfloops" if config_file["SELFLOOPS_INCLUDED"] else ""}\
     ({len(equivalents)} total):""")
     for x in equivalents:
         print(x)
@@ -151,11 +151,11 @@ def get_motifs(interaction_matrix, combs, codes, n):
     return triads
 
 
-def motif_search(cfg, interaction_matrix, batch_size, dump=False, verbose=False):
+def motif_search(config_file, interaction_matrix, batch_size, dump=False, verbose=False):
     
-    network_name = cfg["NETWORK_TO_SEARCH_IN"]
+    network_name = config_file["NETWORK_TO_SEARCH_IN"]
     codes, mapping = get_triad_codes()
-    N_CORES = mp.cpu_count() if cfg["N_CORES_TO_USE"] == -1 else cfg["N_CORES_TO_USE"]
+    N_CORES = mp.cpu_count() if config_file["N_CORES_TO_USE"] == -1 else config_file["N_CORES_TO_USE"]
     
     def connected_triads_generator(interaction_matrix):
         if type(interaction_matrix) == 'scipy.sparse.csr.csr_matrix':
@@ -379,7 +379,7 @@ def shuffle_network(matrix, threshold=0.75):
             complete = True
     return shuffled_matrix
 
-def generate_random_networks(cfg, interaction_matrix, nsims, nsteps, nswaps):
+def generate_random_networks(config_file, interaction_matrix, nsims, nsteps, nswaps):
     counters = []
     for _ in range(nsteps):
         pool = mp.Pool(mp.cpu_count())
@@ -388,7 +388,7 @@ def generate_random_networks(cfg, interaction_matrix, nsims, nsteps, nswaps):
         pool.close()
         pool.join()
         for arr in tqdm(shuffled_arrays):
-            motifs, counter = motif_search(cfg, arr, batch_size=10000)
+            motifs, counter = motif_search(config_file, arr, batch_size=10000)
             counters.append(counter)
     return counters
 
@@ -508,13 +508,13 @@ def build_Tnet(edges, n):
     interaction_matrix[edges[:, 0], edges[:, 1]] = 1
     return interaction_matrix
 
-def collect_topological_parameters(cfg, interaction_matrix, label):
+def collect_topological_parameters(config_file, interaction_matrix, label):
     """returns ffl-node participation, sparsity, average in/out-degree
        requires adjacency matrix and config file
     """
     import statistics
     #ffl-part
-    motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
+    motifs, counter = motif_search(config_file, interaction_matrix, batch_size=10000)
     motifs = motifs["030T"]
     ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs], [])))
     p1 = len(ffl_nodes)/interaction_matrix.shape[0]
@@ -542,13 +542,13 @@ def collect_topological_parameters(cfg, interaction_matrix, label):
     
     return params
 
-def collect_ffl_component(cfg, interaction_matrix):
+def collect_ffl_component(config_file, interaction_matrix):
     """returns ffl-node participation
        requires adjacency matrix and config file
     """
     import statistics
     #ffl-part
-    motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
+    motifs, counter = motif_search(config_file, interaction_matrix, batch_size=10000)
     motifs = motifs["030T"]
     ffl_nodes = list(set(sum([list(map(int, x.split("_"))) for x in motifs], [])))
     p1 = len(ffl_nodes)/interaction_matrix.shape[0]
@@ -573,7 +573,7 @@ def limit_memory(maxsize):
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
-def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, size, stability_motifs=False):
+def analyze_exctracted_network(config_file, path_to_tsv, network_label, network_rep, size, stability_motifs=False):
     """
     collect topological stats from extracted networks
     """
@@ -604,7 +604,7 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
     #if shuffled:
     #    interaction_matrix = shuffle_network(interaction_matrix)
     #print(interaction_matrix)
-    topological_properties = collect_topological_parameters(cfg,interaction_matrix, network_label)
+    topological_properties = collect_topological_parameters(config_file,interaction_matrix, network_label)
     topological_properties.append(size)
     topological_properties.append(network_rep)
     
@@ -613,8 +613,8 @@ def analyze_exctracted_network(cfg, path_to_tsv, network_label, network_rep, siz
         #graph_nx = nx.DiGraph(interaction_matrix)
         #cycles_counts = list(nx.algorithms.cycles.simple_cycles(graph_nx))
         #topological_properties = [ffl_counts, cycles_counts]
-        motifs, counter = motif_search(cfg, interaction_matrix, batch_size=10000)
-        shuffled_counters = generate_random_networks(cfg, interaction_matrix, 10, 10, 60000)
+        motifs, counter = motif_search(config_file, interaction_matrix, batch_size=10000)
+        shuffled_counters = generate_random_networks(config_file, interaction_matrix, 10, 10, 60000)
         #topological_properties = counter
         #topological_properties = {k:len(v) for k, v in counter.items()}
         topological_properties = build_zscores_report(shuffled_counters, counter)
