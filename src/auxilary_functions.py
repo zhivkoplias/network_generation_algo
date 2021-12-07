@@ -600,6 +600,7 @@ def analyze_exctracted_network(config_file, path_to_tsv, network_label, network_
         edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
         np_edges = edges_[["idx_tg", "idx_tf"]].values
         interaction_matrix = build_Tnet(np_edges, len(nodes))
+        #interaction_matrix = interaction_matrix.T
     
     #if shuffled:
     #    interaction_matrix = shuffle_network(interaction_matrix)
@@ -614,7 +615,7 @@ def analyze_exctracted_network(config_file, path_to_tsv, network_label, network_
         #cycles_counts = list(nx.algorithms.cycles.simple_cycles(graph_nx))
         #topological_properties = [ffl_counts, cycles_counts]
         motifs, counter = motif_search(config_file, interaction_matrix, batch_size=10000)
-        shuffled_counters = generate_random_networks(config_file, interaction_matrix, 10, 10, 60000)
+        shuffled_counters = generate_random_networks(config_file, interaction_matrix, 100, 10, 60000)
         #topological_properties = counter
         #topological_properties = {k:len(v) for k, v in counter.items()}
         topological_properties = build_zscores_report(shuffled_counters, counter)
