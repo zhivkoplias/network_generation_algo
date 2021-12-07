@@ -46,7 +46,7 @@ def main(args):
     for rep in range(args.num_networks):
         yeast_matrix, ffl_motif, ffl_component, ffl_matrix = load_ffl_based_component()
         #growth_rate = np.random.randint(1,6)*0.1
-        growth_rate = 0.9
+        growth_rate = 0.5
         #core_size = np.random.randint(20,30)
         core_size = 25
 	#time_generation, p1_nodes --> for output "time_test"

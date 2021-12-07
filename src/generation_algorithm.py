@@ -115,11 +115,16 @@ def get_network_params(interaction_matrix, config_file, verbose=False,motif_sear
             res += node_part[x] == 1
             if node_part[x] == 1:
                 i = x
-        types[res] += 1
-        if res == 1:
-            edges_1.append(set(f.split_motif(triad))-set([i]))
-        if res == 0:
-            motifs_0.append(triad)
+        #####
+        try:
+            types[res] += 1
+            if res == 1:
+                edges_1.append(set(f.split_motif(triad))-set([i]))
+            if res == 0:
+                motifs_0.append(triad)
+        except KeyError:
+            pass
+        ####
     types = pd.Series(types)
     unique_nodes = types/sum(types)
     if verbose:
@@ -510,7 +515,10 @@ def get_attachment_0n1e(substrate_matrix, params):
                     neighbours.append(list(nx.all_neighbors(graph_nx, node)))
 
         common_node = list(set(neighbours[0]).intersection(set(neighbours[1])))
-        all_nodes = sorted([link_to_attach[0], link_to_attach[1], common_node[0]])
+        try:
+            all_nodes = sorted([link_to_attach[0], link_to_attach[1], common_node[0]])
+        except IndexError:
+            pass
         for node in all_nodes:
             print('things_u_sum: '+str(i[node] for i in substrate_matrix))
             print('out_degree_for_node: '+str(sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0]))
@@ -806,35 +814,44 @@ def filter_for_two_edge_motif(substrate_matrix, config_file):
     #!Note
     #deletion of 021C leads to 
     #for motif_type in [matrix_motifs['021U'], matrix_motifs['021C'], matrix_motifs['021D']]:
-    for motif_type in [matrix_motifs['021C']]:
-        inner_counts = 0
-        print(motif_type)
-        for motif in motif_type:
-            print(motif)
-            #iterate over all nodes in motif
-            nodes = motif.split('_')
-            out_degrees = {}
-            in_degrees = {}
-            for node in nodes:
-                #calculate out-degree
-                out_degrees[node] = substrate_matrix[int(node),:].sum()
-                in_degrees[node] = substrate_matrix[:,int(node)].sum()
+    FFLs = matrix_motifs['030T']
+    motif_type = matrix_motifs['021C']
+    inner_counts = 0
+    #print(motif_type)
+    for motif in motif_type:
+        print(motif)
+        #iterate over all nodes in motif
+        nodes = motif.split('_')
+        out_degrees = {}
+        in_degrees = {}
+        for node in nodes:
+            #calculate out-degree
+            out_degrees[node] = substrate_matrix[int(node),:].sum()
+            in_degrees[node] = substrate_matrix[:,int(node)].sum()
                 
-            #sort by out-degree
-            out_degrees = {k: v for k, v in sorted(out_degrees.items(), key=lambda item: item[1])}
-            in_degrees = {k: v for k, v in sorted(in_degrees.items(), key=lambda item: item[1])}
+        #sort by out-degree
+        out_degrees = {k: v for k, v in sorted(out_degrees.items(), key=lambda item: item[1])}
+        in_degrees = {k: v for k, v in sorted(in_degrees.items(), key=lambda item: item[1])}
             
-            nodes_out = list(out_degrees.keys())
-            nodes_in = list(in_degrees.keys())
+        all_degrees = {k: in_degrees.get(k, 0) + out_degrees.get(k, 0) for k in set(in_degrees) | set(out_degrees)}
+        all_degrees = {k: v for k, v in sorted(all_degrees.items(), key=lambda item: item[1])}
             
-            all_degrees = {k: in_degrees.get(k, 0) + out_degrees.get(k, 0) for k in set(in_degrees) | set(out_degrees)}
-            all_degrees = {k: v for k, v in sorted(all_degrees.items(), key=lambda item: item[1])}
+        nodes_all = list(all_degrees.keys())
             
-            nodes_all = list(all_degrees.keys())
-            
-            #convert 021U to FFL               
+        #convert 021U to FFL
+        checker = 0
+        for FFL in FFLs:
+            FFL = FFL.split('_')
+            print('FFL len')
+            print(len([i for i, j in zip(FFL, nodes_all) if i == j]))
+            if len([i for i, j in zip(FFL, nodes_all) if i == j])>=2:
+                checker += 1
+                
+        if checker==0:
             substrate_matrix[int(nodes_all[1]),int(nodes_all[2])] = 1
             inner_counts +=1
+        if inner_counts >= substrate_matrix.shape[0]/3:
+            break
             
             #substrate_matrix[int(nodes_out[0]),int(nodes_out[2])] = 0
             
@@ -842,41 +859,45 @@ def filter_for_two_edge_motif(substrate_matrix, config_file):
             
         print(f"number_of_motif_substitutions in 021C: {inner_counts}")
         
-    for motif_type in [matrix_motifs['021D']]:
-        inner_counts = 0
-        print(motif_type)
-        for motif in motif_type:
-            #print(motif)
-            #iterate over all nodes in motif
-            nodes = motif.split('_')
-            out_degrees = {}
-            in_degrees = {}
-            for node in nodes:
-                #calculate out-degree
-                out_degrees[node] = substrate_matrix[int(node),:].sum()
-                in_degrees[node] = substrate_matrix[:,int(node)].sum()
-                
-            #sort by out-degree
-            out_degrees = {k: v for k, v in sorted(out_degrees.items(), key=lambda item: item[1])}
-            in_degrees = {k: v for k, v in sorted(in_degrees.items(), key=lambda item: item[1])}
-            
-            nodes_out = list(out_degrees.keys())
-            nodes_in = list(in_degrees.keys())
-            
-            all_degrees = {k: in_degrees.get(k, 0) + out_degrees.get(k, 0) for k in set(in_degrees) | set(out_degrees)}
-            all_degrees = {k: v for k, v in sorted(all_degrees.items(), key=lambda item: item[1])}
-            
-            nodes_all = list(all_degrees.keys())
-            
-            #convert 021U to FFL
-            substrate_matrix[int(nodes_in[1]),int(nodes_in[2])] = 1
-            inner_counts +=1
-            
-            #substrate_matrix[int(nodes_out[0]),int(nodes_out[2])] = 0
-            
-            #counter // do sum of the matrix instead to calculate the number of added edges
-            
-        print(f"number_of_motif_substitutions in 021D: {inner_counts}")
+# =============================================================================
+#     for motif_type in [matrix_motifs['021D']]:
+#         inner_counts = 0
+#         print(motif_type)
+#         for motif in motif_type:
+#             #print(motif)
+#             #iterate over all nodes in motif
+#             nodes = motif.split('_')
+#             out_degrees = {}
+#             in_degrees = {}
+#             for node in nodes:
+#                 #calculate out-degree
+#                 out_degrees[node] = substrate_matrix[int(node),:].sum()
+#                 in_degrees[node] = substrate_matrix[:,int(node)].sum()
+#                 
+#             #sort by out-degree
+#             out_degrees = {k: v for k, v in sorted(out_degrees.items(), key=lambda item: item[1])}
+#             in_degrees = {k: v for k, v in sorted(in_degrees.items(), key=lambda item: item[1])}
+#             
+#             nodes_out = list(out_degrees.keys())
+#             nodes_in = list(in_degrees.keys())
+#             
+#             all_degrees = {k: in_degrees.get(k, 0) + out_degrees.get(k, 0) for k in set(in_degrees) | set(out_degrees)}
+#             all_degrees = {k: v for k, v in sorted(all_degrees.items(), key=lambda item: item[1])}
+#             
+#             nodes_all = list(all_degrees.keys())
+#             
+#             #convert 021U to FFL
+#             substrate_matrix[int(nodes_in[1]),int(nodes_in[2])] = 1
+#             inner_counts +=1
+#             if inner_counts >= motifs_stats['021D']/5:
+#                 break
+#             
+#             #substrate_matrix[int(nodes_out[0]),int(nodes_out[2])] = 0
+#             
+#             #counter // do sum of the matrix instead to calculate the number of added edges
+#             
+#         print(f"number_of_motif_substitutions in 021D: {inner_counts}")
+# =============================================================================
         
     loops_edges = substrate_matrix.sum() - original_sum
         
@@ -1017,6 +1038,7 @@ def generate_artificial_network(
     i = 0
     edges = 0
     barabasi_entering = 0
+    two_edge_edges = 0
 
     N_CORES = mp.cpu_count() if config_file["N_CORES_TO_USE"] == -1 else config_file["N_CORES_TO_USE"]
     while substrate_matrix.shape[0]+edges < network_size:
@@ -1079,6 +1101,10 @@ def generate_artificial_network(
             network_params = get_network_params(substrate_matrix, config_file, verbose=False)
             edges = 0
             del edge_list
+            
+            #new_two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file)
+            #two_edge_edges += new_two_edge_edges
+            #print(f"two_edge_edges: {two_edge_edges}")
         
         else:
             # Calling psutil.cpu_precent() for 2 seconds
@@ -1170,9 +1196,9 @@ def generate_artificial_network(
         two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file)
         print(f"two_edge_edges: {two_edge_edges}")
         loop_edges += two_edge_edges
-        unique021, all021, all030 = print_unique_nodes_two_edge_motif(substrate_matrix, config_file)
-        print(f"unique021: {unique021}")
-        print(len(unique021))
+        #unique021, all021, all030 = print_unique_nodes_two_edge_motif(substrate_matrix, config_file)
+        #print(f"unique021: {unique021}")
+        #print(len(unique021))
     else:
         loop_edges = 0
     compensated_edges = 0
