@@ -182,20 +182,22 @@ def get_network_params(interaction_matrix, config_file, verbose=False,motif_sear
 
 #Random selection of the inner/outer motif types and number of shared nodes with probabilities from the previous step
 
-def get_attachment_params(substrate_matrix, params, growth_pace):
+def get_attachment_params(substrate_matrix, params, p2_parameter, p4_parameter):
     """
     Selection of inner/outer motifs and number of shared nodes
     ________________________________________________________________________
     params - network parameters from previous stage of analysis (see get_network_params)
     """
+    p2_parameter = float(p2_parameter)
+    p4_parameter = float(p4_parameter)
     # number of unique nodes in the outer motif
     normal_unique_nodes = params.unique_nodes.loc[[0, 1]]
     unique_nodes = normal_unique_nodes
     #print('uniq nodes')
     #print(unique_nodes)
     #unique_nodes = unique_nodes/sum(unique_nodes)
-    unique_nodes[1] = (growth_pace)
-    unique_nodes[0] = (1 - growth_pace)
+    unique_nodes[1] = (p2_parameter)
+    unique_nodes[0] = (1 - p2_parameter)
     #print(unique_nodes.values)
 	
     n_unique_nodes = np.random.choice(
@@ -215,8 +217,8 @@ def get_attachment_params(substrate_matrix, params, growth_pace):
         unique_edges_0 = params.unique_edges_0.loc[[1, 2]]
         unique_edges_0 = unique_edges_0/sum(unique_edges_0)
         #twiking p4 and p3
-        unique_edges_0[1] = 0.9
-        unique_edges_0[2] = 0.1
+        unique_edges_0[1] = p4_parameter #p4
+        unique_edges_0[2] = 1-p4_parameter
         unique_edges_0 = unique_edges_0/sum(unique_edges_0)
         n_unique_edges = int(np.random.choice(
             unique_edges_0.index, p=unique_edges_0.values
@@ -517,16 +519,20 @@ def get_attachment_0n1e(substrate_matrix, params):
         common_node = list(set(neighbours[0]).intersection(set(neighbours[1])))
         try:
             all_nodes = sorted([link_to_attach[0], link_to_attach[1], common_node[0]])
+            for node in all_nodes:
+                print('things_u_sum: '+str(i[node] for i in substrate_matrix))
+                print('out_degree_for_node: '+str(sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0]))
+                if sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0] >= 0.7:
+                    link_to_attach = None
+                    return link_to_attach
+        
+                key_to_update = '_'.join([str(i) for i in all_nodes])
+                return link_to_attach, key_to_update
+            
         except IndexError:
-            pass
-        for node in all_nodes:
-            print('things_u_sum: '+str(i[node] for i in substrate_matrix))
-            print('out_degree_for_node: '+str(sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0]))
-            if sum(i[node] for i in substrate_matrix)/substrate_matrix.shape[0] >= 0.7:
-                link_to_attach = None
-                return link_to_attach
-        key_to_update = '_'.join([str(i) for i in all_nodes])
-        return link_to_attach, key_to_update
+            link_to_attach = None
+            return link_to_attach
+        
     else:
         return link_to_attach
 
@@ -806,10 +812,11 @@ def filter_for_loops(substrate_matrix, config_file):
         loops_edges +=1
     return loops_edges, substrate_matrix
 
-def filter_for_two_edge_motif(substrate_matrix, config_file):
+def filter_for_two_edge_motif(substrate_matrix, config_file, cascade_transformation_num=3):
     matrix_motifs, motifs_stats = f.motif_search(config_file, substrate_matrix, batch_size=10000)
     original_sum = substrate_matrix.sum()
     
+    cascade_transformation_num = int(cascade_transformation_num)
     #iterate over all 3-node loops in network
     #!Note
     #deletion of 021C leads to 
@@ -850,7 +857,7 @@ def filter_for_two_edge_motif(substrate_matrix, config_file):
         if checker==0:
             substrate_matrix[int(nodes_all[1]),int(nodes_all[2])] = 1
             inner_counts +=1
-        if inner_counts >= substrate_matrix.shape[0]/3:
+        if inner_counts >= substrate_matrix.shape[0]/cascade_transformation_num:
             break
             
             #substrate_matrix[int(nodes_out[0]),int(nodes_out[2])] = 0
@@ -944,9 +951,11 @@ def generate_artificial_network(
     motifs=None, 
     motifs_network=None, 
     nucleus_size=30,
-    growth_pace=0.35,
+    p2_parameter=0.35,
+    p4_parameter=0.5,
     network_size=100,
-    reference_matrix=None
+    reference_matrix=None,
+    cascade_transformation_num=3
 ):
     
     """
@@ -1124,7 +1133,8 @@ def generate_artificial_network(
                       fix_network_params.unique_edges_1,
                       fix_network_params.unique_edges_0]
                 )
-            params = get_attachment_params(substrate_matrix, network_params, growth_pace=growth_pace)
+            params = get_attachment_params(substrate_matrix, network_params, p2_parameter=p2_parameter,\
+                                           p4_parameter=p4_parameter)
     #         print(params[-5:])
             if params.n_unique_nodes == 1:
                 #print('1 node')
@@ -1193,7 +1203,8 @@ def generate_artificial_network(
     #check for sparsity
     if disrupt_cycles:
         loop_edges, substrate_matrix = filter_for_loops(substrate_matrix, config_file)
-        two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file)
+        two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file,\
+                                                                     cascade_transformation_num=3)
         print(f"two_edge_edges: {two_edge_edges}")
         loop_edges += two_edge_edges
         #unique021, all021, all030 = print_unique_nodes_two_edge_motif(substrate_matrix, config_file)

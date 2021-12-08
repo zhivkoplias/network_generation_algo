@@ -2,7 +2,6 @@
 
 import os
 import numpy as np
-import pandas as pd
 import sys
 import csv
 sys.path.insert(0, "../src")
@@ -10,14 +9,9 @@ ART_NET_PATH = "../networks"
 
 import auxilary_functions as functions
 from generation_algorithm import *
-import joblib
 import networkx as nx
-from time import sleep
-import statistics
 from argparse import ArgumentParser
 import json
-
-#cfg = functions.get_actual_parametrization("../src/config.json")
 
 def load_ffl_based_component():
     with open(args.config_file, 'r') as j:
@@ -43,32 +37,20 @@ def load_ffl_based_component():
         return interaction_matrix, motifs_orig, motifs_network, interaction_matrix_ffl
 
 def main(args):
-    for rep in range(int(args.num_networks)):
+    for rep in range(args.num_networks):
         yeast_matrix, ffl_motif, ffl_component, ffl_matrix = load_ffl_based_component()
-        #growth_rate = np.random.randint(1,6)*0.1
-        p2_rate = 0.9
-        #core_size = np.random.randint(20,30)
+        #p2_rate = 0.5 #p2
+        #p4_rate = 0.9 #p4
+        #num_of_cascades = 3 #kN nb! save and store the number of the actual motif changes
         core_size = 25
-	#time_generation, p1_nodes --> for output "time_test"
         with open(args.config_file, 'r') as j:
             config_file = json.loads(j.read())
-
             artificial_matrix_ffl = generate_artificial_network(
                         yeast_matrix, config_file, random_seed = np.random.randint(1,100),
                         motifs=ffl_motif, motifs_network=ffl_component,
-                        reference_matrix=ffl_matrix, p2_parameter=p2_rate,
-                        network_size=args.final_size, nucleus_size=core_size)
-    
-        #time_generation = artificial_matrix_ffl[1]
-        #artificial_matrix_ffl = artificial_matrix_ffl[0]
-        
-        #save output // if full stats
-        #artificial_matrix_ffl_list = artificial_matrix_ffl[1]
-        #artificial_matrix_ffl = artificial_matrix_ffl[0]
-
-        #GS-to-NetworkX format conversion
-        #artificial_matrix_ffl = artificial_matrix_ffl.transpose()
-        #joblib.dump(artificial_matrix_ffl, os.path.join(ART_NET_PATH,network_name+".gz"))
+                        reference_matrix=ffl_matrix, p2_parameter=args.p2_rate,
+                        p4_parameter=args.p4_rate, network_size=args.final_size,
+                        nucleus_size=core_size, cascade_transformation_num=args.num_of_cascades)
 
             if not os.path.exists(ART_NET_PATH):
                 os.mkdir(ART_NET_PATH)
@@ -82,18 +64,8 @@ def main(args):
             with open(args.out_dir+'/'+network_name+'.tsv', "w", newline="") as f:
     	        writer = csv.writer(f, delimiter ='\t')
     	        writer.writerows(artificial_matrix_ffl)
-        #print(ff.collect_topological_parameters(cfg, artificial_matrix_ffl, 'stats'))
-        #print('/n')
-        #print(ff.analyze_exctracted_network(cfg, args.out_dir+'/'+network_name+'.tsv', 'whatever', rep, args.final_size))
-        
-        #collect ffl-component // if output is 'time_test'
-        #print(functions.collect_ffl_component(cfg, artificial_matrix_ffl))
-        
-	#for "time-test" output
-	#print(time_generation)
-        #print(p1_nodes)
-
-        return
+                
+    return
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -105,6 +77,12 @@ if __name__ == '__main__':
                             help="Number of networks to generate")
     parser.add_argument("out_dir", type=str, nargs='?', const=1, default='.',
                             help="Output directory")
+    parser.add_argument("p2_rate", type=str,
+                            help="p2 probability")
+    parser.add_argument("p4_rate", type=str,
+                            help="p4 probability")
+    parser.add_argument("num_of_cascades", type=str,
+                            help="Number cascades to delete")
     args = parser.parse_args()
     main(args)
 
