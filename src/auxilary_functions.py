@@ -743,3 +743,35 @@ def analyze_connectivity(path_to_tsv, network_label, network_rep, size):
     df_connectivity['rep'] = network_rep
 
     return df_connectivity
+    
+def return_interaction_matrix_graph(path_to_tsv, network_label, network_rep, size):
+    """
+    collect topological stats from extracted networks
+    """
+    import networkx as nx
+    if network_label == 'randg' or network_label == 'dag':
+        interaction_matrix = np.array(pd.read_csv(path_to_tsv, header = None, sep=','))
+        interaction_matrix = np.apply_along_axis(list, 1, interaction_matrix)
+        interaction_matrix = (interaction_matrix > 0).astype(np.int_)
+        #print(interaction_matrix)
+    else:
+        edges = pd.read_csv(path_to_tsv, sep="\t")
+        if network_label == 'gnw':
+            edges.columns = ["tf", "tg"]
+            #edges.columns = ["tf", "tg", "strength"]
+            #edges = edges[["tf", "tg"]]
+        else:
+            edges.columns = ["tf", "tg"]
+        edges['tf'].astype(str)
+        edges['tg'].astype(str)
+        edges.columns = ["tf", "tg"]
+    
+        nodes = sorted(np.unique(np.concatenate((edges.tf.unique(), edges.tg.unique()))))
+        nodes = pd.DataFrame(data=range(len(nodes)), index=nodes, columns=["idx"])
+        edges_ = edges.join(nodes, on="tf").join(nodes, on="tg", lsuffix="_tf", rsuffix="_tg")
+        np_edges = edges_[["idx_tg", "idx_tf"]].values
+        interaction_matrix = build_Tnet(np_edges, len(nodes))
+    
+    #interaction_matrix_graph = nx.DiGraph(interaction_matrix)
+    
+    return interaction_matrix

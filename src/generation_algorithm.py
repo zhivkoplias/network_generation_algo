@@ -1203,10 +1203,14 @@ def generate_artificial_network(
     #check for sparsity
     if disrupt_cycles:
         loop_edges, substrate_matrix = filter_for_loops(substrate_matrix, config_file)
-        two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file,\
-                                                                     cascade_transformation_num=3)
-        print(f"two_edge_edges: {two_edge_edges}")
-        loop_edges += two_edge_edges
+        
+        ################DELETE CASCADES OPTION###################
+        #two_edge_edges, substrate_matrix = filter_for_two_edge_motif(substrate_matrix, config_file,\
+        #                                                             cascade_transformation_num=3)
+        #print(f"two_edge_edges: {two_edge_edges}")
+        #loop_edges += two_edge_edges
+        #############################################
+        
         #unique021, all021, all030 = print_unique_nodes_two_edge_motif(substrate_matrix, config_file)
         #print(f"unique021: {unique021}")
         #print(len(unique021))
