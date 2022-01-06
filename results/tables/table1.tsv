@@ -1,5 +1,5 @@
 ffl_node_participation	sparsity	in-degree	out-degree	organism
-0.374	2.328	1.106	1.222	e.coli
-0.27	2.899	1.421	1.477	yeast
-0.315	2.643	1.274	1.369	mouse
-0.347	2.944	1.364	1.58	human
+1392	2.328	1.106	1.222	e.coli
+3370	2.899	1.421	1.477	yeast
+1956	2.643	1.274	1.369	mouse
+4152	2.944	1.364	1.58	human
