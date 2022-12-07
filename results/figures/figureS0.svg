@@ -39,7 +39,7 @@
      inkscape:window-x="67"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg1383" />
+     inkscape:current-layer="layer1" />
   <metadata
      id="metadata2">
     <rdf:RDF>
@@ -68,7 +68,7 @@
      inkscape:export-xdpi="300"
      inkscape:export-ydpi="300"
      style="stroke-linecap:butt;stroke-linejoin:round"
-     transform="matrix(0.98276646,0,0,0.95762712,6.1016949,15.254237)">
+     transform="matrix(0.92761913,0,0,0.89830509,-3.0508473,54.915254)">
     <g
        id="patch_1"
        style="stroke-linecap:butt;stroke-linejoin:round">
@@ -5338,5 +5338,15 @@
      id="layer1"
      inkscape:label="Layer 1"
      style="display:inline;stroke-linecap:butt;stroke-linejoin:round"
-     inkscape:groupmode="layer" />
+     inkscape:groupmode="layer">
+    <rect
+       style="fill:#ffffff;fill-opacity:0;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:round"
+       id="rect778"
+       width="890.84747"
+       height="799.32202"
+       x="-48.81356"
+       y="-36.610168"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+  </g>
 </svg>
